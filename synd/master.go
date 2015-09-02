@@ -281,8 +281,14 @@ func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.No
 		log.Println("Host provided no valid addresses during registration.")
 		return &pb.NodeConfig{}, fmt.Errorf("No valid addresses provided")
 	case s.nodeInRing(r.Hostname, addrs):
-		log.Println("Node already appears to be in ring")
-		return &pb.NodeConfig{}, fmt.Errorf("Node already in ring")
+		a := strings.Join(addrs, "|")
+		r, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", r.Hostname), fmt.Sprintf("address~=%s", a)})
+		if len(r) > 1 {
+			log.Println("Found more than one match when attempting to find node ID:", r)
+			return &pb.NodeConfig{}, fmt.Errorf("Node already in ring/unable to obtain ID")
+		}
+		log.Println("Node already in ring, sending localid:", r[0].ID())
+		return &pb.NodeConfig{Localid: r[0].ID(), Ring: *s.rb}, nil
 	case !s.validTiers(r.Tiers):
 		return &pb.NodeConfig{}, fmt.Errorf("Invalid tiers provided")
 	}
