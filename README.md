@@ -1,23 +1,25 @@
 # ort-syndicate
 
-# basic installation
+### basic installation
 
+```
 go get -u github.com/pandemicsyn/ort-syndicate/synd
 go install -a github.com/pandemicsyn/ort-syndicate/synd
 mkdir -p /etc/ort
 cp -av ~/go/src/github.com/pandemicsyn/ort-syndicate/synd/server.crt /etc/ort
 cp -av ~/go/src/github.com/pandemicsyn/ort-syndicate/synd/server.key /etc/ort
+```
 
-# setup
+### setup
 
-You need to make sure 1:
+You need to make sure:
 
 - /etc/ort exists
 - /etc/ort.builder exists and has at least one active node
 - /etc/ort.ring exists and has at least one active node
 - /etc/ort contains valid server.crt and server.key
 
-# temporary dev step (this will go away)
+### temporary dev step (this will go away)
 
 The first time you try and start synd you'll get an error like:
 
@@ -34,11 +36,11 @@ To fix this:
 - `cp -av /etc/ort.builder /etc/ort/$THERINGVERSION-ort.builder`
 - `cp -av /etc/ort.ring /etc/ort/$THERINGVERSION-ort.ring`
 
-# slaves
+### slaves
 
 aren't working yet
 
-# systemd init script
+### systemd init script
 
 A working systemd init script is provided in packaging/root/usr/share/synd/systemd/synd.service. To use it
 on Debian Jessie `cp packaging/root/usr/share/synd/systemd/synd.service /lib/systemd/system`. You can then
