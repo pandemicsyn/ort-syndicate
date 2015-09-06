@@ -1,0 +1,17 @@
+[Unit]
+Description=ort syndicate daemon
+After=syslog.target network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/synd
+ExecStart=/root/go/bin/synd -master=true -cert_file="/etc/ort/server.crt" -key_file="/etc/ort/server.key"
+RestartSec=5
+Restart=on-failure
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIentifier=synd
+
+[Install]
+WantedBy=multi-user.target
