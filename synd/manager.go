@@ -22,9 +22,10 @@ const (
 )
 
 type ringmgr struct {
-	r ring.Ring
-	b *ring.Builder
 	sync.RWMutex
+	cfg          *Config
+	r            ring.Ring
+	b            *ring.Builder
 	slaves       []*RingSlave
 	version      int64
 	localAddress string
@@ -35,11 +36,11 @@ type ringmgr struct {
 }
 
 func (s *ringmgr) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf("/etc/ort/%d-ort.builder", version))
+	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-ort.builder", s.cfg.RingDir, version))
 	if err != nil {
 		return ring, builder, err
 	}
-	r, err := ioutil.ReadFile(fmt.Sprintf("/etc/ort/%d-ort.ring", version))
+	r, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-ort.ring", s.cfg.RingDir, version))
 	if err != nil {
 		return ring, builder, err
 	}
@@ -65,10 +66,10 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 	newRing := s.b.Ring()
 	newVersion := newRing.Version()
 	log.Println("--> New ring version is:", newRing.Version())
-	if err := ring.PersistRingOrBuilder(nil, s.b, fmt.Sprintf("/etc/ort/%d-ort.builder", newVersion)); err != nil {
+	if err := ring.PersistRingOrBuilder(nil, s.b, fmt.Sprintf("%s/%d-ort.builder", s.cfg.RingDir, newVersion)); err != nil {
 		return &pb.RingStatus{}, err
 	}
-	if err := ring.PersistRingOrBuilder(newRing, nil, fmt.Sprintf("/etc/ort/%d-ort.ring", newVersion)); err != nil {
+	if err := ring.PersistRingOrBuilder(newRing, nil, fmt.Sprintf("%s/%d-ort.ring", s.cfg.RingDir, newVersion)); err != nil {
 		return &pb.RingStatus{}, err
 	}
 
@@ -214,10 +215,10 @@ func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.No
 	newRing := s.b.Ring()
 	newVersion := newRing.Version()
 	log.Println("--> New ring version is:", newRing.Version())
-	if err := ring.PersistRingOrBuilder(nil, s.b, fmt.Sprintf("/etc/ort/%d-ort.builder", newVersion)); err != nil {
+	if err := ring.PersistRingOrBuilder(nil, s.b, fmt.Sprintf("%s/%d-ort.builder", s.cfg.RingDir, newVersion)); err != nil {
 		return &pb.NodeConfig{}, err
 	}
-	if err := ring.PersistRingOrBuilder(newRing, nil, fmt.Sprintf("/etc/ort/%d-ort.ring", newVersion)); err != nil {
+	if err := ring.PersistRingOrBuilder(newRing, nil, fmt.Sprintf("%s/%d-ort.ring", s.cfg.RingDir, newVersion)); err != nil {
 		return &pb.NodeConfig{}, err
 	}
 
