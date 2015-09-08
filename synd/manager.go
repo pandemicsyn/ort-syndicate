@@ -75,12 +75,12 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 
 	newRB, newBB, err := s.loadRingBuilderBytes(newVersion)
 	if err != nil {
-		return &pb.RingStatus{}, fmt.Errorf("Failed to load new ring/builder bytes:", err)
+		return &pb.RingStatus{}, fmt.Errorf("Failed to load new ring/builder bytes: %s", err)
 	}
 
 	err = s.replicateRing(newRing, newRB, newBB)
 	if err != nil {
-		return &pb.RingStatus{}, fmt.Errorf("Ring replicate failed:", err)
+		return &pb.RingStatus{}, fmt.Errorf("Ring replicate failed: %s", err)
 	}
 
 	s.r = newRing
@@ -98,17 +98,17 @@ func (s *ringmgr) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, e
 }
 
 func (s *ringmgr) SetConf(c context.Context, n *pb.Conf) (*pb.RingStatus, error) {
-	return &pb.RingStatus{true, s.version}, nil
+	return &pb.RingStatus{Status: true, Version: s.version}, nil
 }
 
 func (s *ringmgr) SetActive(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
-	return &pb.RingStatus{true, s.version}, nil
+	return &pb.RingStatus{Status: true, Version: s.version}, nil
 }
 
 func (s *ringmgr) GetVersion(c context.Context, n *pb.EmptyMsg) (*pb.RingStatus, error) {
 	s.RLock()
 	defer s.RUnlock()
-	return &pb.RingStatus{true, s.version}, nil
+	return &pb.RingStatus{Status: true, Version: s.version}, nil
 }
 
 // validNodeIP verifies that the provided ip is not a loopback or multicast address
@@ -224,12 +224,12 @@ func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.No
 
 	newRB, newBB, err := s.loadRingBuilderBytes(newVersion)
 	if err != nil {
-		return &pb.NodeConfig{}, fmt.Errorf("Failed to load new ring/builder bytes:", err)
+		return &pb.NodeConfig{}, fmt.Errorf("Failed to load new ring/builder bytes: %s", err)
 	}
 
 	err = s.replicateRing(newRing, newRB, newBB)
 	if err != nil {
-		return &pb.NodeConfig{}, fmt.Errorf("Ring replicate failed:", err)
+		return &pb.NodeConfig{}, fmt.Errorf("Ring replicate failed: %s", err)
 	}
 
 	s.r = newRing
