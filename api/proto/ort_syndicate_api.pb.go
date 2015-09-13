@@ -17,9 +17,12 @@ It has these top-level messages:
 	RingStatus
 	Node
 	ModifyMsg
+	RingConf
 	Conf
 	RegisterRequest
 	NodeConfig
+	Ring
+	SearchResult
 */
 package proto
 
@@ -116,6 +119,29 @@ func (m *ModifyMsg) Reset()         { *m = ModifyMsg{} }
 func (m *ModifyMsg) String() string { return proto1.CompactTextString(m) }
 func (*ModifyMsg) ProtoMessage()    {}
 
+type RingConf struct {
+	Status *RingStatus `protobuf:"bytes,1,opt,name=status" json:"status,omitempty"`
+	Conf   *Conf       `protobuf:"bytes,2,opt,name=conf" json:"conf,omitempty"`
+}
+
+func (m *RingConf) Reset()         { *m = RingConf{} }
+func (m *RingConf) String() string { return proto1.CompactTextString(m) }
+func (*RingConf) ProtoMessage()    {}
+
+func (m *RingConf) GetStatus() *RingStatus {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *RingConf) GetConf() *Conf {
+	if m != nil {
+		return m.Conf
+	}
+	return nil
+}
+
 type Conf struct {
 	Conf            []byte `protobuf:"bytes,1,opt,name=conf,proto3" json:"conf,omitempty"`
 	RestartRequired bool   `protobuf:"varint,2,opt,name=restartRequired" json:"restartRequired,omitempty"`
@@ -146,6 +172,30 @@ type NodeConfig struct {
 func (m *NodeConfig) Reset()         { *m = NodeConfig{} }
 func (m *NodeConfig) String() string { return proto1.CompactTextString(m) }
 func (*NodeConfig) ProtoMessage()    {}
+
+type Ring struct {
+	Version uint64 `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
+	Ring    []byte `protobuf:"bytes,2,opt,name=ring,proto3" json:"ring,omitempty"`
+}
+
+func (m *Ring) Reset()         { *m = Ring{} }
+func (m *Ring) String() string { return proto1.CompactTextString(m) }
+func (*Ring) ProtoMessage()    {}
+
+type SearchResult struct {
+	Nodes []*Node `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
+}
+
+func (m *SearchResult) Reset()         { *m = SearchResult{} }
+func (m *SearchResult) String() string { return proto1.CompactTextString(m) }
+func (*SearchResult) ProtoMessage()    {}
+
+func (m *SearchResult) GetNodes() []*Node {
+	if m != nil {
+		return m.Nodes
+	}
+	return nil
+}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -298,6 +348,10 @@ type RingMgrClient interface {
 	SetConf(ctx context.Context, in *Conf, opts ...grpc.CallOption) (*RingStatus, error)
 	SetActive(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
 	GetVersion(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingStatus, error)
+	GetGlobalConfig(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingConf, error)
+	GetNodeConfig(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingConf, error)
+	SearchNodes(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SearchResult, error)
+	GetRing(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*Ring, error)
 	RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error)
 }
 
@@ -363,6 +417,42 @@ func (c *ringMgrClient) GetVersion(ctx context.Context, in *EmptyMsg, opts ...gr
 	return out, nil
 }
 
+func (c *ringMgrClient) GetGlobalConfig(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingConf, error) {
+	out := new(RingConf)
+	err := grpc.Invoke(ctx, "/proto.RingMgr/GetGlobalConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ringMgrClient) GetNodeConfig(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingConf, error) {
+	out := new(RingConf)
+	err := grpc.Invoke(ctx, "/proto.RingMgr/GetNodeConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ringMgrClient) SearchNodes(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SearchResult, error) {
+	out := new(SearchResult)
+	err := grpc.Invoke(ctx, "/proto.RingMgr/SearchNodes", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ringMgrClient) GetRing(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*Ring, error) {
+	out := new(Ring)
+	err := grpc.Invoke(ctx, "/proto.RingMgr/GetRing", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *ringMgrClient) RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error) {
 	out := new(NodeConfig)
 	err := grpc.Invoke(ctx, "/proto.RingMgr/RegisterNode", in, out, c.cc, opts...)
@@ -381,6 +471,10 @@ type RingMgrServer interface {
 	SetConf(context.Context, *Conf) (*RingStatus, error)
 	SetActive(context.Context, *Node) (*RingStatus, error)
 	GetVersion(context.Context, *EmptyMsg) (*RingStatus, error)
+	GetGlobalConfig(context.Context, *EmptyMsg) (*RingConf, error)
+	GetNodeConfig(context.Context, *Node) (*RingConf, error)
+	SearchNodes(context.Context, *Node) (*SearchResult, error)
+	GetRing(context.Context, *EmptyMsg) (*Ring, error)
 	RegisterNode(context.Context, *RegisterRequest) (*NodeConfig, error)
 }
 
@@ -460,6 +554,54 @@ func _RingMgr_GetVersion_Handler(srv interface{}, ctx context.Context, codec grp
 	return out, nil
 }
 
+func _RingMgr_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(RingMgrServer).GetGlobalConfig(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _RingMgr_GetNodeConfig_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(Node)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(RingMgrServer).GetNodeConfig(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _RingMgr_SearchNodes_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(Node)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(RingMgrServer).SearchNodes(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _RingMgr_GetRing_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(RingMgrServer).GetRing(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _RingMgr_RegisterNode_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(RegisterRequest)
 	if err := codec.Unmarshal(buf, in); err != nil {
@@ -499,6 +641,22 @@ var _RingMgr_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVersion",
 			Handler:    _RingMgr_GetVersion_Handler,
+		},
+		{
+			MethodName: "GetGlobalConfig",
+			Handler:    _RingMgr_GetGlobalConfig_Handler,
+		},
+		{
+			MethodName: "GetNodeConfig",
+			Handler:    _RingMgr_GetNodeConfig_Handler,
+		},
+		{
+			MethodName: "SearchNodes",
+			Handler:    _RingMgr_SearchNodes_Handler,
+		},
+		{
+			MethodName: "GetRing",
+			Handler:    _RingMgr_GetRing_Handler,
 		},
 		{
 			MethodName: "RegisterNode",

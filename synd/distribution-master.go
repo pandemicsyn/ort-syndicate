@@ -16,8 +16,8 @@ type RingSlave struct {
 	sync.RWMutex
 	status  bool
 	last    time.Time
-	version int64
 	addr    string
+	version int64
 	conn    *grpc.ClientConn
 	client  pb.RingDistClient
 }
@@ -36,7 +36,7 @@ func (s *ringmgr) RegisterSlave(slave *RingSlave) error {
 	log.Printf("--> Setting up slave: %s", slave.addr)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(_SYN_REGISTER_TIMEOUT)*time.Second)
 	i := &pb.RingMsg{
-		Version:  s.version,
+		Version:  s.r.Version(),
 		Ring:     *s.rb,
 		Builder:  *s.bb,
 		Deadline: 0,
@@ -46,7 +46,7 @@ func (s *ringmgr) RegisterSlave(slave *RingSlave) error {
 	if err != nil {
 		return err
 	}
-	if res.Version != s.version {
+	if res.Version != s.r.Version() {
 		return fmt.Errorf("Version or master on remote node %+v did not match local entries. Got %+v.", slave, res)
 	}
 	if !res.Ring || !res.Builder {
@@ -73,7 +73,7 @@ func (s *ringmgr) replicateRing(r ring.Ring, rb, bb *[]byte) error {
 			Ring:     *rb,
 			Builder:  *bb,
 			Deadline: time.Now().Add(60 * time.Second).Unix(),
-			Rollback: s.version,
+			Rollback: s.r.Version(),
 		}
 		res, err := slave.client.Store(ctx, i)
 		if err != nil {

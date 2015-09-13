@@ -44,6 +44,10 @@ service RingMgr {
     rpc SetConf(Conf) returns (RingStatus) {}
     rpc SetActive(Node) returns (RingStatus) {}
     rpc GetVersion(EmptyMsg) returns (RingStatus) {}
+    rpc GetGlobalConfig(EmptyMsg) returns (RingConf) {}
+    rpc GetNodeConfig(Node) returns (RingConf) {}
+    rpc SearchNodes(Node) returns (SearchResult) {}
+    rpc GetRing(EmptyMsg) returns (Ring) {}
     rpc RegisterNode(RegisterRequest) returns (NodeConfig) {}
 }
 
@@ -70,6 +74,11 @@ message ModifyMsg {
     uint64 id = 3;
 }
 
+message RingConf {
+    RingStatus status = 1;
+    Conf conf = 2;
+}
+
 message Conf {
     bytes conf = 1;
     bool  restartRequired = 2;
@@ -87,4 +96,13 @@ message RegisterRequest {
 message NodeConfig {
     uint64 localid = 1;
     bytes ring = 2;
+}
+
+message Ring {
+    uint64 version = 1;
+    bytes ring = 2;
+}
+
+message SearchResult {
+    repeated Node nodes = 1;
 }

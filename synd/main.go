@@ -34,7 +34,25 @@ func Filter(vs []string, f func(string) bool) []string {
 	return vsf
 }
 
-func getLastRing(cfg *Config) (string, string, error) {
+func getRingPaths(cfg *Config) (lastBuilder string, lastRing string, err error) {
+	_, err = os.Stat(filepath.Join(cfg.RingDir, "ort.builder"))
+	if err != nil {
+		//TODO: no active builder found, so should we search for the most recent one
+		//we can find and load it and hopefully its matching ring?
+		return "", "", fmt.Errorf("No builder file found in %s", cfg.RingDir)
+	}
+	lastBuilder = filepath.Join(cfg.RingDir, "ort.builder")
+	_, err = os.Stat(filepath.Join(cfg.RingDir, "ort.ring"))
+	if err != nil {
+		//TODO: if we don't find a matching ort.ring should we just
+		// use ort.builder to make new one ?
+		return "", "", fmt.Errorf("No ring file found in %s", cfg.RingDir)
+	}
+	lastRing = filepath.Join(cfg.RingDir, "ort.ring")
+	return lastBuilder, lastRing, nil
+}
+
+func findLastRing(cfg *Config) (lastBuilder string, lastRing string, err error) {
 	fp, err := os.Open(cfg.RingDir)
 	if err != nil {
 		return "", "", err
@@ -45,36 +63,20 @@ func getLastRing(cfg *Config) (string, string, error) {
 		return "", "", err
 	}
 
-	var lastBuilder string
 	fn := Filter(names, func(v string) bool {
 		return strings.HasSuffix(v, "-ort.builder")
 	})
 	sort.Strings(fn)
 	if len(fn) != 0 {
 		lastBuilder = filepath.Join(cfg.RingDir, fn[len(fn)-1])
-	} else {
-		_, err := os.Stat(filepath.Join(cfg.RingDir, "ort.builder"))
-		if err != nil {
-			return "", "", fmt.Errorf("No builder file found in %s", cfg.RingDir)
-		}
-		lastBuilder = filepath.Join(cfg.RingDir, "ort.builder")
 	}
-	log.Printf("Found %s, as last builder", lastBuilder)
 
-	var lastRing string
 	fn = Filter(names, func(v string) bool {
 		return strings.HasSuffix(v, "-ort.ring")
 	})
 	if len(fn) != 0 {
 		lastRing = filepath.Join(cfg.RingDir, fn[len(fn)-1])
-	} else {
-		_, err := os.Stat(filepath.Join(cfg.RingDir, "ort.ring"))
-		if err != nil {
-			return "", "", fmt.Errorf("No ring file found in %s", cfg.RingDir)
-		}
-		lastRing = filepath.Join(cfg.RingDir, "ort.ring")
 	}
-	log.Printf("Found %s, as last ring", lastRing)
 	return lastBuilder, lastRing, nil
 }
 
@@ -83,7 +85,7 @@ func newRingMgrServer(cfg *Config) (*ringmgr, error) {
 	s := new(ringmgr)
 	s.cfg = cfg
 
-	bfile, rfile, err := getLastRing(cfg)
+	bfile, rfile, err := getRingPaths(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -91,9 +93,9 @@ func newRingMgrServer(cfg *Config) (*ringmgr, error) {
 	FatalIf(err, "Builder file load")
 	s.r, _, err = ring.RingOrBuilder(rfile)
 	FatalIf(err, "Ring file load")
-	s.version = s.r.Version()
-	log.Println("Ring version is:", s.version)
-	s.rb, s.bb, err = s.loadRingBuilderBytes(s.version)
+	log.Println("Ring version is:", s.r.Version())
+	//TODO: verify ring version in bytes matches what we expect
+	s.rb, s.bb, err = s.loadRingBuilderBytes(s.r.Version())
 	FatalIf(err, "Attempting to load ring/builder bytes")
 
 	for _, v := range cfg.NetFilter {
