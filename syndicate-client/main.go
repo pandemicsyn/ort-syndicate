@@ -52,7 +52,22 @@ func New() (*SyndClient, error) {
 }
 
 func helpCmd() error {
-	return fmt.Errorf("help.")
+	return fmt.Errorf(`
+
+		Valid commands are:
+		version			#print version
+		config          #print ring config
+		config <nodeid> #uses uint64 id
+		search			#lists all
+		search id=<nodeid>
+		search meta=<metastring>
+		search tier=<string> or search tierX=<string>
+		search address=<string> or search addressX=<string>
+		search any of the above K/V combos
+		rm <nodeid>
+		set config=./path/to/config
+
+	`)
 }
 
 func main() {
@@ -61,7 +76,7 @@ func main() {
 		panic(err)
 	}
 	if err := s.mainEntry(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, brimtext.Sentence(err.Error()))
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 }
@@ -118,7 +133,7 @@ func (s *SyndClient) mainEntry(args []string) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("unknown command: %#v", args[2])
+	return helpCmd()
 }
 
 func (s *SyndClient) printVersionCmd() error {

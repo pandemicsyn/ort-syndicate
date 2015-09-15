@@ -86,7 +86,7 @@ func (s *ringmgr) applyRingChange(c *ringChange) error {
 func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
-	log.Println("--> Got AddNode request")
+	log.Println("Got AddNode request")
 	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
@@ -105,19 +105,19 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 	}
 	log.Print(brimtext.Align(report, nil))
 	newRing := b.Ring()
-	log.Println("--> Attempting to apply ring version:", newRing.Version())
+	log.Println("Attempting to apply ring version:", newRing.Version())
 	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
-		log.Println("--> Failed to apply ring change:", err)
+		log.Println("Failed to apply ring change:", err)
 	}
-	log.Println("--> Ring version is now:", s.r.Version())
+	log.Println("Ring version is now:", s.r.Version())
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
 func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
-	log.Println("--> Got RemoveNode request for:", n.Id)
+	log.Println("Got RemoveNode request for:", n.Id)
 	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
@@ -129,12 +129,12 @@ func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, err
 	}
 	b.RemoveNode(n.Id)
 	newRing := b.Ring()
-	log.Println("--> Attempting to apply ring version:", newRing.Version())
+	log.Println("Attempting to apply ring version:", newRing.Version())
 	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
-		log.Println("--> Failed to apply ring change:", err)
+		log.Println(" Failed to apply ring change:", err)
 	}
-	log.Println("--> Ring version is now:", s.r.Version())
+	log.Println("Ring version is now:", s.r.Version())
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
@@ -145,7 +145,7 @@ func (s *ringmgr) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, e
 func (s *ringmgr) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
-	log.Println("--> Got SetConf request")
+	log.Println("Got SetConf request")
 	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
@@ -153,12 +153,12 @@ func (s *ringmgr) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, err
 	}
 	b.SetConf(conf.Conf)
 	newRing := b.Ring()
-	log.Println("--> Attempting to apply ring version:", newRing.Version())
+	log.Println("Attempting to apply ring version:", newRing.Version())
 	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
-		log.Println("--> Failed to apply ring change:", err)
+		log.Println("Failed to apply ring change:", err)
 	}
-	log.Println("--> Ring version is now:", s.r.Version())
+	log.Println("Ring version is now:", s.r.Version())
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
@@ -206,7 +206,6 @@ func (s *ringmgr) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, 
 			filter = append(filter, fmt.Sprintf("address~=%s.*", v))
 		}
 	}
-	log.Println(filter)
 	nodes, err := s.r.Nodes().Filter(filter)
 	res := make([]*pb.Node, len(nodes))
 	if err != nil {
@@ -225,7 +224,6 @@ func (s *ringmgr) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, 
 			Meta:      n.Meta(),
 			Conf:      n.Conf(),
 		}
-
 	}
 	return &pb.SearchResult{Nodes: res}, nil
 }
@@ -309,9 +307,7 @@ func (s *ringmgr) nodeInRing(hostname string, addrs []string) bool {
 func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.NodeConfig, error) {
 	s.Lock()
 	defer s.Unlock()
-	log.Println("--> Go Register request")
-	log.Printf("%#v", r)
-
+	log.Printf("Got Register request: %#v", r)
 	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
@@ -360,13 +356,13 @@ func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.No
 	}
 	log.Print(brimtext.Align(report, nil))
 	newRing := b.Ring()
-	log.Println("--> Attempting to apply ring version:", newRing.Version())
+	log.Println("Attempting to apply ring version:", newRing.Version())
 	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
-		log.Println("--> Failed to apply ring change:", err)
-		log.Println("--> Ring version is now:", s.r.Version())
+		log.Println("Failed to apply ring change:", err)
+		log.Println("Ring version is now:", s.r.Version())
 		return &pb.NodeConfig{}, fmt.Errorf("Unable to apply ring change during registration")
 	}
-	log.Printf("--> Added node %d ring version is now %d", n.ID(), s.r.Version())
+	log.Printf("Added node %d ring version is now %d", n.ID(), s.r.Version())
 	return &pb.NodeConfig{Localid: n.ID(), Ring: *s.rb}, nil
 }
