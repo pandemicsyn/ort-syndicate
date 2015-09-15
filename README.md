@@ -55,6 +55,31 @@ fhines@47:~/go/src/github.com/pandemicsyn/ort-syndicate/synd (master)$ go build 
 2015/09/07 19:58:38 Master starting up on 8443...
 ```
 
+### syndicate-client
+
+go install github.com/pandemicsyn/ort-syndicate/syndicate-client
+
+
+```
+    syndicate-client
+        Valid commands are:
+        version         #print version
+        config          #print ring config
+        config <nodeid> #uses uint64 id
+        search          #lists all
+        search id=<nodeid>
+        search meta=<metastring>
+        search tier=<string> or search tierX=<string>
+        search address=<string> or search addressX=<string>
+        search any of the above K/V combos
+        rm <nodeid>
+        set config=./path/to/config
+```
+
+### Ortd 
+
+Ort either needs a valid SVR record setup or you need to set ORT_SYNDICATE_OVERRIDE=127.0.0.1:8443 when running ortd.
+
 ### slaves
 
 aren't working yet
