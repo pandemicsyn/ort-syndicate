@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -42,6 +44,11 @@ func printNode(n *pb.Node) {
 func New() (*SyndClient, error) {
 	var err error
 	var opts []grpc.DialOption
+	var creds credentials.TransportAuthenticator
+	creds = credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: true,
+	})
+	opts = append(opts, grpc.WithTransportCredentials(creds))
 	s := SyndClient{}
 	s.conn, err = grpc.Dial(*syndicateAddr, opts...)
 	if err != nil {
