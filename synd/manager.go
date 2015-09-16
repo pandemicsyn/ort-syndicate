@@ -288,7 +288,7 @@ func (s *ringmgr) validTiers(t []string) bool {
 			}
 		}
 	*/
-	return false
+	return true
 }
 
 // nodeInRing just checks to see if the hostname or addresses appear
