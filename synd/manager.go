@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -267,10 +266,7 @@ func (s *ringmgr) validNodeIP(i net.IP) bool {
 	return inRange
 }
 
-// validTiers parses a list of provided ring tiers to see if they are valid.
-// Its assumed that there must be at least 2 tiers
 // tier0 must never already exist as a tier0 entry in the ring
-// tier1+ just need to match the configured go regex filter
 func (s *ringmgr) validTiers(t []string) bool {
 	if len(t) <= 1 {
 		return false
@@ -279,17 +275,19 @@ func (s *ringmgr) validTiers(t []string) bool {
 	if len(r) != 0 || err != nil {
 		return false
 	}
-	for i := 1; i <= len(t); i++ {
-		for _, v := range s.tierlimits {
-			matched, err := regexp.MatchString(v, t[i])
-			if err != nil {
-				return false
-			}
-			if matched {
-				return true
+	/*
+		for i := 1; i <= len(t); i++ {
+			for _, v := range s.tierlimits {
+				matched, err := regexp.MatchString(v, t[i])
+				if err != nil {
+					return false
+				}
+				if matched {
+					return true
+				}
 			}
 		}
-	}
+	*/
 	return false
 }
 

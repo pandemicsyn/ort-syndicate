@@ -62,7 +62,9 @@ func loadConfig(f string) (*Config, error) {
 	}
 
 	// first we apply any values we got via the toml config
-	if ct.Master == "true" {
+	if ct.Master == "false" {
+		c.Master = false
+	} else {
 		c.Master = true
 	}
 	if ct.Slaves != nil && len(ct.Slaves) >= 1 {
@@ -86,7 +88,9 @@ func loadConfig(f string) (*Config, error) {
 	if ct.KeyFile != "" {
 		c.KeyFile = ct.KeyFile
 	}
-	if ct.UseTLS == "true" {
+	if ct.UseTLS == "false" {
+		c.UseTLS = false
+	} else {
 		c.UseTLS = true
 	}
 	if ct.OPLog != "" {
