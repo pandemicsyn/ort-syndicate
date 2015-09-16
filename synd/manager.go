@@ -268,7 +268,7 @@ func (s *ringmgr) validNodeIP(i net.IP) bool {
 
 // tier0 must never already exist as a tier0 entry in the ring
 func (s *ringmgr) validTiers(t []string) bool {
-	if len(t) <= 1 {
+	if len(t) == 0 {
 		return false
 	}
 	r, err := s.r.Nodes().Filter([]string{fmt.Sprintf("tier0=%s", t[0])})
