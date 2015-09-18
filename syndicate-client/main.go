@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"time"
 
 	"strconv"
@@ -59,22 +60,21 @@ func New() (*SyndClient, error) {
 }
 
 func helpCmd() error {
-	return fmt.Errorf(`
+	u, _ := user.Current()
+	return fmt.Errorf(`I'm sorry %s, I'm afraid I can't do that. Valid commands are:
 
-		Valid commands are:
-		version			#print version
-		config          #print ring config
-		config <nodeid> #uses uint64 id
-		search			#lists all
-		search id=<nodeid>
-		search meta=<metastring>
-		search tier=<string> or search tierX=<string>
-		search address=<string> or search addressX=<string>
-		search any of the above K/V combos
-		rm <nodeid>
-		set config=./path/to/config
-
-	`)
+version			#print version
+config          #print ring config
+config <nodeid> #uses uint64 id
+search			#lists all
+search id=<nodeid>
+search meta=<metastring>
+search tier=<string> or search tierX=<string>
+search address=<string> or search addressX=<string>
+search any of the above K/V combos
+rm <nodeid>
+set config=./path/to/config
+`, u.Username)
 }
 
 func main() {
