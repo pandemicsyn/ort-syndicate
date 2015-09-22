@@ -91,7 +91,10 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
 	}
-	n := b.AddNode(e.Active, e.Capacity, e.Tiers, e.Addresses, e.Meta, e.Conf)
+	n, err := b.AddNode(e.Active, e.Capacity, e.Tiers, e.Addresses, e.Meta, e.Conf)
+	if err != nil {
+		return &pb.RingStatus{}, err
+	}
 	report := [][]string{
 		[]string{"ID:", fmt.Sprintf("%016x", n.ID())},
 		[]string{"RAW ID", fmt.Sprintf("%d", n.ID())},
@@ -341,7 +344,10 @@ func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.No
 		return &pb.NodeConfig{}, fmt.Errorf("Invalid tiers provided")
 	}
 
-	n := b.AddNode(true, 1000, r.Tiers, addrs, fmt.Sprintf("%s|%s", r.Hostname, r.Hardwareid), []byte(""))
+	n, err := b.AddNode(true, 1000, r.Tiers, addrs, fmt.Sprintf("%s|%s", r.Hostname, r.Hardwareid), []byte(""))
+	if err != nil {
+		return &pb.NodeConfig{}, err
+	}
 	report := [][]string{
 		[]string{"ID:", fmt.Sprintf("%016x", n.ID())},
 		[]string{"RAW ID", fmt.Sprintf("%d", n.ID())},
