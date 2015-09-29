@@ -90,9 +90,9 @@ func newRingMgrServer(cfg *Config) (*ringmgr, error) {
 		panic(err)
 	}
 	_, s.b, err = ring.RingOrBuilder(bfile)
-	FatalIf(err, "Builder file load")
+	FatalIf(err, fmt.Sprintf("Builder file (%s) load failed:", bfile))
 	s.r, _, err = ring.RingOrBuilder(rfile)
-	FatalIf(err, "Ring file load")
+	FatalIf(err, fmt.Sprintf("Ring file (%s) load failed:", rfile))
 	log.Println("Ring version is:", s.r.Version())
 	//TODO: verify ring version in bytes matches what we expect
 	s.rb, s.bb, err = s.loadRingBuilderBytes(s.r.Version())

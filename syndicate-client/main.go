@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/gholt/brimtext"
+	cc "github.com/pandemicsyn/ort-syndicate/api/cmdctrl"
 	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -29,6 +30,11 @@ type SyndClient struct {
 	client pb.RingMgrClient
 }
 
+type CmdCtrlClient struct {
+	conn   *grpc.ClientConn
+	client cc.CmdCtrlClient
+}
+
 func printNode(n *pb.Node) {
 	report := [][]string{
 		[]string{"ID:", fmt.Sprintf("%d", n.Id)},
@@ -40,6 +46,24 @@ func printNode(n *pb.Node) {
 		[]string{"Conf:", string(n.Conf)},
 	}
 	fmt.Print(brimtext.Align(report, nil))
+}
+
+func NewCmdCtrlClient(address string) (*CmdCtrlClient, error) {
+	var err error
+	var opts []grpc.DialOption
+	var creds credentials.TransportAuthenticator
+	creds = credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: true,
+	})
+	opts = append(opts, grpc.WithTransportCredentials(creds))
+	s := CmdCtrlClient{}
+	s.conn, err = grpc.Dial(address, opts...)
+	if err != nil {
+		return &CmdCtrlClient{}, fmt.Errorf("Failed to dial ring server for config: %v", err)
+	}
+	s.client = cc.NewCmdCtrlClient(s.conn)
+	return &s, nil
+
 }
 
 func New() (*SyndClient, error) {
@@ -63,6 +87,7 @@ func helpCmd() error {
 	u, _ := user.Current()
 	return fmt.Errorf(`I'm sorry %s, I'm afraid I can't do that. Valid commands are:
 
+stop <cmdctrladdress> #attempts to stop the remote node
 version			#print version
 config          #print ring config
 config <nodeid> #uses uint64 id
@@ -93,6 +118,12 @@ func (s *SyndClient) mainEntry(args []string) error {
 		return helpCmd()
 	}
 	switch args[1] {
+	case "stop":
+		c, err := NewCmdCtrlClient(args[2])
+		if err != nil {
+			return err
+		}
+		return c.stopNodeCmd()
 	case "version":
 		return s.printVersionCmd()
 	case "config":
@@ -141,6 +172,16 @@ func (s *SyndClient) mainEntry(args []string) error {
 		return nil
 	}
 	return helpCmd()
+}
+
+func (s *CmdCtrlClient) stopNodeCmd() error {
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	status, err := s.client.Stop(ctx, &cc.EmptyMsg{})
+	if err != nil {
+		return err
+	}
+	fmt.Println("Stopped:", status.Status, " Msg:", status.Msg)
+	return nil
 }
 
 func (s *SyndClient) printVersionCmd() error {

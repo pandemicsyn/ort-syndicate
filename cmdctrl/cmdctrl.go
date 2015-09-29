@@ -28,6 +28,7 @@ type ConfigOpts struct {
 	CertFile      string
 	KeyFile       string
 	UseTLS        bool
+	Enabled       bool
 }
 
 func NewCCServer(c CmdCtrl, cfg *ConfigOpts) *CCServer {
