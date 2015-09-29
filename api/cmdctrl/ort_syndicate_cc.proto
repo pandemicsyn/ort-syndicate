@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package cmdctrl;
+
+
+service CmdCtrl {
+    rpc RingUpdate(Ring) returns (RingUpdateResult) {}
+    rpc Reload(EmptyMsg) returns (StatusMsg) {}
+    rpc Restart(EmptyMsg) returns (StatusMsg) {}
+    rpc Start(EmptyMsg) returns (StatusMsg) {}
+    rpc Stop(EmptyMsg) returns (StatusMsg) {}
+    rpc Stats(EmptyMsg) returns (StatsMsg) {}
+}
+
+message RingUpdateResult {
+    uint64 oldversion = 1;
+    uint64 newversion = 2;
+}
+
+message StatsMsg {
+    bytes statsjson = 1;
+}
+
+message EmptyMsg {}
+
+message StatusMsg {
+    bool status = 1;
+    string msg = 2;
+}
+
+message Ring {
+    uint64 version = 1;
+    bytes ring = 2;
+}
