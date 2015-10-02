@@ -27,6 +27,8 @@ It has these top-level messages:
 package proto
 
 import proto1 "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 import (
 	context "golang.org/x/net/context"
@@ -35,6 +37,8 @@ import (
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto1.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 type RingMsg struct {
 	Version  int64  `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
@@ -52,7 +56,7 @@ type StoreResult struct {
 	Version int64  `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
 	Ring    bool   `protobuf:"varint,2,opt,name=ring" json:"ring,omitempty"`
 	Builder bool   `protobuf:"varint,3,opt,name=builder" json:"builder,omitempty"`
-	ErrMsg  string `protobuf:"bytes,4,opt" json:"ErrMsg,omitempty"`
+	ErrMsg  string `protobuf:"bytes,4,opt,name=ErrMsg" json:"ErrMsg,omitempty"`
 }
 
 func (m *StoreResult) Reset()         { *m = StoreResult{} }
@@ -267,9 +271,9 @@ func RegisterRingDistServer(s *grpc.Server, srv RingDistServer) {
 	s.RegisterService(&_RingDist_serviceDesc, srv)
 }
 
-func _RingDist_Store_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingDist_Store_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(RingMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingDistServer).Store(ctx, in)
@@ -279,9 +283,9 @@ func _RingDist_Store_Handler(srv interface{}, ctx context.Context, codec grpc.Co
 	return out, nil
 }
 
-func _RingDist_Revert_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingDist_Revert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(RingMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingDistServer).Revert(ctx, in)
@@ -291,9 +295,9 @@ func _RingDist_Revert_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _RingDist_Status_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingDist_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(StatusRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingDistServer).Status(ctx, in)
@@ -303,9 +307,9 @@ func _RingDist_Status_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _RingDist_Setup_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingDist_Setup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(RingMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingDistServer).Setup(ctx, in)
@@ -482,9 +486,9 @@ func RegisterRingMgrServer(s *grpc.Server, srv RingMgrServer) {
 	s.RegisterService(&_RingMgr_serviceDesc, srv)
 }
 
-func _RingMgr_AddNode_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).AddNode(ctx, in)
@@ -494,9 +498,9 @@ func _RingMgr_AddNode_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _RingMgr_RemoveNode_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_RemoveNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).RemoveNode(ctx, in)
@@ -506,9 +510,9 @@ func _RingMgr_RemoveNode_Handler(srv interface{}, ctx context.Context, codec grp
 	return out, nil
 }
 
-func _RingMgr_ModNode_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_ModNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(ModifyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).ModNode(ctx, in)
@@ -518,9 +522,9 @@ func _RingMgr_ModNode_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _RingMgr_SetConf_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_SetConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Conf)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).SetConf(ctx, in)
@@ -530,9 +534,9 @@ func _RingMgr_SetConf_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _RingMgr_SetActive_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_SetActive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).SetActive(ctx, in)
@@ -542,9 +546,9 @@ func _RingMgr_SetActive_Handler(srv interface{}, ctx context.Context, codec grpc
 	return out, nil
 }
 
-func _RingMgr_GetVersion_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).GetVersion(ctx, in)
@@ -554,9 +558,9 @@ func _RingMgr_GetVersion_Handler(srv interface{}, ctx context.Context, codec grp
 	return out, nil
 }
 
-func _RingMgr_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).GetGlobalConfig(ctx, in)
@@ -566,9 +570,9 @@ func _RingMgr_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, code
 	return out, nil
 }
 
-func _RingMgr_GetNodeConfig_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_GetNodeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).GetNodeConfig(ctx, in)
@@ -578,9 +582,9 @@ func _RingMgr_GetNodeConfig_Handler(srv interface{}, ctx context.Context, codec 
 	return out, nil
 }
 
-func _RingMgr_SearchNodes_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_SearchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).SearchNodes(ctx, in)
@@ -590,9 +594,9 @@ func _RingMgr_SearchNodes_Handler(srv interface{}, ctx context.Context, codec gr
 	return out, nil
 }
 
-func _RingMgr_GetRing_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_GetRing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).GetRing(ctx, in)
@@ -602,9 +606,9 @@ func _RingMgr_GetRing_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _RingMgr_RegisterNode_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _RingMgr_RegisterNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(RegisterRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RingMgrServer).RegisterNode(ctx, in)

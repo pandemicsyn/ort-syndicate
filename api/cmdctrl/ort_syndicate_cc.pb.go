@@ -18,6 +18,8 @@ It has these top-level messages:
 package cmdctrl
 
 import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 import (
 	context "golang.org/x/net/context"
@@ -26,10 +28,11 @@ import (
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 type RingUpdateResult struct {
-	Oldversion uint64 `protobuf:"varint,1,opt,name=oldversion" json:"oldversion,omitempty"`
-	Newversion uint64 `protobuf:"varint,2,opt,name=newversion" json:"newversion,omitempty"`
+	Newversion int64 `protobuf:"varint,1,opt,name=newversion" json:"newversion,omitempty"`
 }
 
 func (m *RingUpdateResult) Reset()         { *m = RingUpdateResult{} }
@@ -61,7 +64,7 @@ func (m *StatusMsg) String() string { return proto.CompactTextString(m) }
 func (*StatusMsg) ProtoMessage()    {}
 
 type Ring struct {
-	Version uint64 `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
+	Version int64  `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
 	Ring    []byte `protobuf:"bytes,2,opt,name=ring,proto3" json:"ring,omitempty"`
 }
 
@@ -161,9 +164,9 @@ func RegisterCmdCtrlServer(s *grpc.Server, srv CmdCtrlServer) {
 	s.RegisterService(&_CmdCtrl_serviceDesc, srv)
 }
 
-func _CmdCtrl_RingUpdate_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _CmdCtrl_RingUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Ring)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).RingUpdate(ctx, in)
@@ -173,9 +176,9 @@ func _CmdCtrl_RingUpdate_Handler(srv interface{}, ctx context.Context, codec grp
 	return out, nil
 }
 
-func _CmdCtrl_Reload_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _CmdCtrl_Reload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).Reload(ctx, in)
@@ -185,9 +188,9 @@ func _CmdCtrl_Reload_Handler(srv interface{}, ctx context.Context, codec grpc.Co
 	return out, nil
 }
 
-func _CmdCtrl_Restart_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _CmdCtrl_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).Restart(ctx, in)
@@ -197,9 +200,9 @@ func _CmdCtrl_Restart_Handler(srv interface{}, ctx context.Context, codec grpc.C
 	return out, nil
 }
 
-func _CmdCtrl_Start_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _CmdCtrl_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).Start(ctx, in)
@@ -209,9 +212,9 @@ func _CmdCtrl_Start_Handler(srv interface{}, ctx context.Context, codec grpc.Cod
 	return out, nil
 }
 
-func _CmdCtrl_Stop_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _CmdCtrl_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).Stop(ctx, in)
@@ -221,9 +224,9 @@ func _CmdCtrl_Stop_Handler(srv interface{}, ctx context.Context, codec grpc.Code
 	return out, nil
 }
 
-func _CmdCtrl_Stats_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _CmdCtrl_Stats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).Stats(ctx, in)

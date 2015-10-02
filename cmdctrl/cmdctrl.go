@@ -14,7 +14,7 @@ type CmdCtrl interface {
 	Stop() (err error)
 	Reload() (err error)
 	Restart() (err error)
-	RingUpdate(version uint64, ringBytes []byte) (oldversion, newversion uint64)
+	RingUpdate(version int64, ringBytes []byte) (newversion int64)
 	Stats() (encoded []byte)
 }
 
@@ -58,7 +58,7 @@ func (c *CCServer) Serve() error {
 
 func (cc *CCServer) RingUpdate(c context.Context, r *pb.Ring) (*pb.RingUpdateResult, error) {
 	res := pb.RingUpdateResult{}
-	res.Oldversion, res.Newversion = cc.cmdctrl.RingUpdate(r.Version, r.Ring)
+	res.Newversion = cc.cmdctrl.RingUpdate(r.Version, r.Ring)
 	return &res, nil
 
 }

@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/gholt/brimtext"
+	"github.com/gholt/ring"
 	cc "github.com/pandemicsyn/ort-syndicate/api/cmdctrl"
 	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
 	"golang.org/x/net/context"
@@ -124,6 +125,18 @@ func (s *SyndClient) mainEntry(args []string) error {
 			return err
 		}
 		return c.stopNodeCmd()
+	case "stats":
+		c, err := NewCmdCtrlClient(args[2])
+		if err != nil {
+			return err
+		}
+		return c.statsNodeCmd()
+	case "ringupdate":
+		c, err := NewCmdCtrlClient(args[2])
+		if err != nil {
+			return err
+		}
+		return c.ringUpdateNodeCmd(args[3])
 	case "version":
 		return s.printVersionCmd()
 	case "config":
@@ -181,6 +194,42 @@ func (s *CmdCtrlClient) stopNodeCmd() error {
 		return err
 	}
 	fmt.Println("Stopped:", status.Status, " Msg:", status.Msg)
+	return nil
+}
+
+func (s *CmdCtrlClient) statsNodeCmd() error {
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	status, err := s.client.Stats(ctx, &cc.EmptyMsg{})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s\n", status.Statsjson)
+	return nil
+}
+
+func (s *CmdCtrlClient) ringUpdateNodeCmd(filename string) error {
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	r, _, err := ring.RingOrBuilder(filename)
+	if err != nil {
+		return err
+	}
+	if r == nil {
+		return fmt.Errorf("Provided builder file rather than ring file")
+	}
+	ru := &cc.Ring{}
+	ru.Version = r.Version()
+	ru.Ring, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	status, err := s.client.RingUpdate(ctx, ru)
+	if err != nil {
+		return err
+	}
+	if status.Newversion != ru.Version {
+		return fmt.Errorf("Ring update seems to have failed. Expected: %d, but remote host reports: %d\n", ru.Version, status.Newversion)
+	}
+	fmt.Println("Remote version is now", status.Newversion)
 	return nil
 }
 
