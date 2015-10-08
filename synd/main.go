@@ -106,9 +106,10 @@ func newRingMgrServer(cfg *Config) (*ringmgr, error) {
 		s.netlimits = append(s.netlimits, n)
 	}
 	s.tierlimits = cfg.TierFilter
-
+	s.managedNodes = bootstrapManagedNodes(s.r)
+	s.changeChan = make(chan *changeMsg, 1)
+	go s.RingChangeManager()
 	s.slaves = cfg.Slaves
-
 	if len(s.slaves) == 0 {
 		log.Println("!! Running without slaves, have no one to register !!")
 		return s, nil

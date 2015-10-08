@@ -31,6 +31,8 @@ type ringmgr struct {
 	bb           *[]byte
 	netlimits    []*net.IPNet
 	tierlimits   []string
+	managedNodes map[uint64]*ManagedNode
+	changeChan   chan *changeMsg
 }
 
 func (s *ringmgr) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err error) {
@@ -78,6 +80,7 @@ func (s *ringmgr) applyRingChange(c *ringChange) error {
 	s.bb = newBB
 	s.b = c.b
 	s.r = c.r
+	go s.NotifyNodes()
 	return nil
 }
 
@@ -113,6 +116,7 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 		log.Println("Failed to apply ring change:", err)
 	}
 	log.Println("Ring version is now:", s.r.Version())
+
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
