@@ -77,6 +77,61 @@ func NewManagedNode(address string) (*ManagedNode, error) {
 	return s, nil
 }
 
+// Take direct from grpc.Conn.WaitForStateChange:
+// WaitForStateChange blocks until the state changes to something other than the sourceState
+// or timeout fires. The grpc instance returns false if timeout fires and true otherwise. Our
+// instance returns false if timeout fires OR if n.conn is nil, and true otherwise. I assume
+// we'll wanna use this do things like update synd state when a node comes online after a
+// failure or something.
+func (n *ManagedNode) ConnWaitForStateChange(timeout time.Duration, sourceState grpc.ConnectivityState) bool {
+	n.Lock()
+	defer n.Unlock()
+	if n.conn != nil {
+		return n.conn.WaitForStateChange(timeout, sourceState)
+	}
+	return false
+}
+
+// ConnState returns the state of the underlying grpc connection.
+// See https://godoc.org/google.golang.org/grpc#ConnectivityState for possible states.
+// Returns -1 if n.conn is nil
+func (n *ManagedNode) ConnState() grpc.ConnectivityState {
+	n.RLock()
+	defer n.RUnlock()
+	if n.conn != nil {
+		return n.conn.State()
+	}
+	return -1
+}
+
+// Connect sets up a grpc connection for the node.
+// Note that this will overwrite an existing conn.
+func (n *ManagedNode) Connect() error {
+	n.Lock()
+	defer n.Unlock()
+	var opts []grpc.DialOption
+	var creds credentials.TransportAuthenticator
+	var err error
+	creds = credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: true,
+	})
+	opts = append(opts, grpc.WithTransportCredentials(creds))
+	n.conn, err = grpc.Dial(n.address, opts...)
+	if err != nil {
+		return fmt.Errorf("Failed to dial ring server for config: %v", err)
+	}
+	n.client = cc.NewCmdCtrlClient(n.conn)
+	return nil
+}
+
+// Disconnect lets you disconnect a managed nodes grpc conn.
+func (n *ManagedNode) Disconnect() error {
+	n.Lock()
+	defer n.Unlock()
+	return n.conn.Close()
+}
+
+// Stop a remote node
 func (n *ManagedNode) Stop() error {
 	n.Lock()
 	defer n.Unlock()
@@ -89,6 +144,7 @@ func (n *ManagedNode) Stop() error {
 	return nil
 }
 
+// RingUpdate lets you push a ring update to a remote node
 func (n *ManagedNode) RingUpdate(r *[]byte, version int64) (bool, error) {
 	n.Lock()
 	defer n.Unlock()
@@ -151,5 +207,26 @@ func (s *ringmgr) RingChangeManager() {
 			}
 			log.Printf("RingUpdate of %d succeeded", k)
 		}
+	}
+}
+
+// TODO: if disconnect encounters an error we just log it and remove the node anyway
+func (s *ringmgr) removeManagedNode(nodeid uint64) {
+	s.RLock()
+	if node, ok := s.managedNodes[nodeid]; ok {
+		node.Lock()
+		s.RUnlock() // nothing else should be messing with s.managedNodes[nodeid] now
+		err := node.Disconnect()
+		if err != nil {
+			log.Printf("Disconnect of node %d encountered err: %s", nodeid, err.Error())
+		}
+		s.Lock()
+		delete(s.managedNodes, nodeid)
+		s.Unlock()
+		return
+		//do something here
+	} else {
+		s.RUnlock()
+		return
 	}
 }

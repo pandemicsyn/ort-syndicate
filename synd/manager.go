@@ -141,6 +141,7 @@ func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, err
 		log.Println(" Failed to apply ring change:", err)
 	}
 	log.Println("Ring version is now:", s.r.Version())
+	go s.removeManagedNode(n.Id)
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
