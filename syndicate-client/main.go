@@ -88,7 +88,10 @@ func helpCmd() error {
 	u, _ := user.Current()
 	return fmt.Errorf(`I'm sorry %s, I'm afraid I can't do that. Valid commands are:
 
-stop <cmdctrladdress> #attempts to stop the remote node
+start <cmdctrladdress> #attempts to start the remote nodes backend
+stop <cmdctrladdress> #attempts to stop the remote nodes backend
+restart <cmdctrladdress> #attempts to restart the remote nodes backend
+exit <cmdctrladdress> #attempts to exit the remote node
 version			#print version
 config          #print ring config
 config <nodeid> #uses uint64 id
@@ -119,12 +122,30 @@ func (s *SyndClient) mainEntry(args []string) error {
 		return helpCmd()
 	}
 	switch args[1] {
+	case "start":
+		c, err := NewCmdCtrlClient(args[2])
+		if err != nil {
+			return err
+		}
+		return c.startNodeCmd()
+	case "restart":
+		c, err := NewCmdCtrlClient(args[2])
+		if err != nil {
+			return err
+		}
+		return c.restartNodeCmd()
 	case "stop":
 		c, err := NewCmdCtrlClient(args[2])
 		if err != nil {
 			return err
 		}
 		return c.stopNodeCmd()
+	case "exit":
+		c, err := NewCmdCtrlClient(args[2])
+		if err != nil {
+			return err
+		}
+		return c.exitNodeCmd()
 	case "stats":
 		c, err := NewCmdCtrlClient(args[2])
 		if err != nil {
@@ -187,9 +208,39 @@ func (s *SyndClient) mainEntry(args []string) error {
 	return helpCmd()
 }
 
+func (s *CmdCtrlClient) startNodeCmd() error {
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	status, err := s.client.Start(ctx, &cc.EmptyMsg{})
+	if err != nil {
+		return err
+	}
+	fmt.Println("Started:", status.Status, " Msg:", status.Msg)
+	return nil
+}
+
+func (s *CmdCtrlClient) restartNodeCmd() error {
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	status, err := s.client.Restart(ctx, &cc.EmptyMsg{})
+	if err != nil {
+		return err
+	}
+	fmt.Println("Restarted:", status.Status, " Msg:", status.Msg)
+	return nil
+}
+
 func (s *CmdCtrlClient) stopNodeCmd() error {
 	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
 	status, err := s.client.Stop(ctx, &cc.EmptyMsg{})
+	if err != nil {
+		return err
+	}
+	fmt.Println("Stopped:", status.Status, " Msg:", status.Msg)
+	return nil
+}
+
+func (s *CmdCtrlClient) exitNodeCmd() error {
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	status, err := s.client.Exit(ctx, &cc.EmptyMsg{})
 	if err != nil {
 		return err
 	}

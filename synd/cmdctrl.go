@@ -131,6 +131,18 @@ func (n *ManagedNode) Disconnect() error {
 	return n.conn.Close()
 }
 
+// Ping verifies a node as actually still alive.
+func (n *ManagedNode) Ping() (bool, string, error) {
+	n.RLock()
+	defer n.RUnlock()
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	status, err := n.client.HealthCheck(ctx, &cc.EmptyMsg{})
+	if err != nil {
+		return false, "", err
+	}
+	return status.Status, status.Msg, err
+}
+
 // Stop a remote node
 func (n *ManagedNode) Stop() error {
 	n.Lock()
@@ -191,6 +203,7 @@ func (s *ringmgr) NotifyNodes() {
 
 func (s *ringmgr) RingChangeManager() {
 	for msg := range s.changeChan {
+		s.RLock()
 		for k, _ := range s.managedNodes {
 			updated, err := s.managedNodes[k].RingUpdate(msg.rb, msg.v)
 			if err != nil {
@@ -207,6 +220,7 @@ func (s *ringmgr) RingChangeManager() {
 			}
 			log.Printf("RingUpdate of %d succeeded", k)
 		}
+		s.RUnlock()
 	}
 }
 
@@ -228,5 +242,18 @@ func (s *ringmgr) removeManagedNode(nodeid uint64) {
 	} else {
 		s.RUnlock()
 		return
+	}
+}
+
+// TODO: remove me, test func
+func (s *ringmgr) pingSweep() {
+	responses := make(map[string]string, len(s.managedNodes))
+	for k, _ := range s.managedNodes {
+		_, msg, err := s.managedNodes[k].Ping()
+		if err != nil {
+			responses[s.managedNodes[k].address] = err.Error()
+			continue
+		}
+		responses[s.managedNodes[k].address] = msg
 	}
 }

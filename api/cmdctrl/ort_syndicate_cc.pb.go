@@ -14,6 +14,7 @@ It has these top-level messages:
 	EmptyMsg
 	StatusMsg
 	Ring
+	HealthCheckMsg
 */
 package cmdctrl
 
@@ -72,6 +73,16 @@ func (m *Ring) Reset()         { *m = Ring{} }
 func (m *Ring) String() string { return proto.CompactTextString(m) }
 func (*Ring) ProtoMessage()    {}
 
+type HealthCheckMsg struct {
+	Status bool   `protobuf:"varint,1,opt,name=status" json:"status,omitempty"`
+	Msg    string `protobuf:"bytes,2,opt,name=msg" json:"msg,omitempty"`
+	Ts     int64  `protobuf:"varint,3,opt,name=ts" json:"ts,omitempty"`
+}
+
+func (m *HealthCheckMsg) Reset()         { *m = HealthCheckMsg{} }
+func (m *HealthCheckMsg) String() string { return proto.CompactTextString(m) }
+func (*HealthCheckMsg) ProtoMessage()    {}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -84,7 +95,9 @@ type CmdCtrlClient interface {
 	Restart(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatusMsg, error)
 	Start(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatusMsg, error)
 	Stop(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatusMsg, error)
+	Exit(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatusMsg, error)
 	Stats(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatsMsg, error)
+	HealthCheck(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*HealthCheckMsg, error)
 }
 
 type cmdCtrlClient struct {
@@ -140,9 +153,27 @@ func (c *cmdCtrlClient) Stop(ctx context.Context, in *EmptyMsg, opts ...grpc.Cal
 	return out, nil
 }
 
+func (c *cmdCtrlClient) Exit(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatusMsg, error) {
+	out := new(StatusMsg)
+	err := grpc.Invoke(ctx, "/cmdctrl.CmdCtrl/Exit", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cmdCtrlClient) Stats(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*StatsMsg, error) {
 	out := new(StatsMsg)
 	err := grpc.Invoke(ctx, "/cmdctrl.CmdCtrl/Stats", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cmdCtrlClient) HealthCheck(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*HealthCheckMsg, error) {
+	out := new(HealthCheckMsg)
+	err := grpc.Invoke(ctx, "/cmdctrl.CmdCtrl/HealthCheck", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +188,9 @@ type CmdCtrlServer interface {
 	Restart(context.Context, *EmptyMsg) (*StatusMsg, error)
 	Start(context.Context, *EmptyMsg) (*StatusMsg, error)
 	Stop(context.Context, *EmptyMsg) (*StatusMsg, error)
+	Exit(context.Context, *EmptyMsg) (*StatusMsg, error)
 	Stats(context.Context, *EmptyMsg) (*StatsMsg, error)
+	HealthCheck(context.Context, *EmptyMsg) (*HealthCheckMsg, error)
 }
 
 func RegisterCmdCtrlServer(s *grpc.Server, srv CmdCtrlServer) {
@@ -224,12 +257,36 @@ func _CmdCtrl_Stop_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return out, nil
 }
 
+func _CmdCtrl_Exit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CmdCtrlServer).Exit(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _CmdCtrl_Stats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(CmdCtrlServer).Stats(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _CmdCtrl_HealthCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CmdCtrlServer).HealthCheck(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -261,8 +318,16 @@ var _CmdCtrl_serviceDesc = grpc.ServiceDesc{
 			Handler:    _CmdCtrl_Stop_Handler,
 		},
 		{
+			MethodName: "Exit",
+			Handler:    _CmdCtrl_Exit_Handler,
+		},
+		{
 			MethodName: "Stats",
 			Handler:    _CmdCtrl_Stats_Handler,
+		},
+		{
+			MethodName: "HealthCheck",
+			Handler:    _CmdCtrl_HealthCheck_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},

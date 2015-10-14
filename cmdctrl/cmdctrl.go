@@ -2,6 +2,7 @@ package cmdctrl
 
 import (
 	"net"
+	"time"
 
 	pb "github.com/pandemicsyn/ort-syndicate/api/cmdctrl"
 	"golang.org/x/net/context"
@@ -12,10 +13,12 @@ import (
 type CmdCtrl interface {
 	Start() (err error)
 	Stop() (err error)
+	Exit() (err error)
 	Reload() (err error)
 	Restart() (err error)
 	RingUpdate(version int64, ringBytes []byte) (newversion int64)
 	Stats() (encoded []byte)
+	HealthCheck() (status bool, msg string)
 }
 
 type CCServer struct {
@@ -63,14 +66,6 @@ func (cc *CCServer) RingUpdate(c context.Context, r *pb.Ring) (*pb.RingUpdateRes
 
 }
 
-func (cc *CCServer) Restart(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, error) {
-	err := cc.cmdctrl.Restart()
-	if err != nil {
-		return &pb.StatusMsg{Status: false, Msg: err.Error()}, nil
-	}
-	return &pb.StatusMsg{Status: true, Msg: ""}, nil
-}
-
 func (cc *CCServer) Start(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, error) {
 	err := cc.cmdctrl.Start()
 	if err != nil {
@@ -87,6 +82,14 @@ func (cc *CCServer) Stop(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, erro
 	return &pb.StatusMsg{Status: true, Msg: ""}, nil
 }
 
+func (cc *CCServer) Restart(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, error) {
+	err := cc.cmdctrl.Restart()
+	if err != nil {
+		return &pb.StatusMsg{Status: false, Msg: err.Error()}, nil
+	}
+	return &pb.StatusMsg{Status: true, Msg: ""}, nil
+}
+
 func (cc *CCServer) Reload(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, error) {
 	err := cc.cmdctrl.Reload()
 	if err != nil {
@@ -95,6 +98,20 @@ func (cc *CCServer) Reload(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, er
 	return &pb.StatusMsg{Status: true, Msg: ""}, nil
 }
 
+func (cc *CCServer) Exit(c context.Context, r *pb.EmptyMsg) (*pb.StatusMsg, error) {
+	err := cc.cmdctrl.Exit()
+	if err != nil {
+		return &pb.StatusMsg{Status: false, Msg: err.Error()}, nil
+	}
+	return &pb.StatusMsg{Status: true, Msg: ""}, nil
+}
+
 func (cc *CCServer) Stats(c context.Context, r *pb.EmptyMsg) (*pb.StatsMsg, error) {
 	return &pb.StatsMsg{Statsjson: cc.cmdctrl.Stats()}, nil
+}
+
+func (cc *CCServer) HealthCheck(c context.Context, r *pb.EmptyMsg) (*pb.HealthCheckMsg, error) {
+	hm := &pb.HealthCheckMsg{Ts: time.Now().Unix()}
+	hm.Status, hm.Msg = cc.cmdctrl.HealthCheck()
+	return hm, nil
 }

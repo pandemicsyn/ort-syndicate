@@ -9,7 +9,9 @@ service CmdCtrl {
     rpc Restart(EmptyMsg) returns (StatusMsg) {}
     rpc Start(EmptyMsg) returns (StatusMsg) {}
     rpc Stop(EmptyMsg) returns (StatusMsg) {}
+    rpc Exit(EmptyMsg) returns (StatusMsg) {}
     rpc Stats(EmptyMsg) returns (StatsMsg) {}
+    rpc HealthCheck(EmptyMsg) returns (HealthCheckMsg) {}
 }
 
 message RingUpdateResult {
@@ -30,4 +32,10 @@ message StatusMsg {
 message Ring {
     int64 version = 1;
     bytes ring = 2;
+}
+
+message HealthCheckMsg {
+    bool status = 1;
+    string msg = 2;
+    int64  ts = 3;
 }
