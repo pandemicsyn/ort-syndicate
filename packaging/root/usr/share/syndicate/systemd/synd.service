@@ -1,11 +1,11 @@
 [Unit]
-Description=ort syndicate daemon
+Description=oort syndicate daemon
 After=syslog.target network.target
 
 [Service]
 Type=simple
 EnvironmentFile=-/etc/default/synd
-ExecStart=/root/go/bin/synd -master=true -cert_file="/etc/ort/server.crt" -key_file="/etc/ort/server.key"
+ExecStart=/root/go/bin/synd -master=true -cert_file="/etc/oort/server.crt" -key_file="/etc/oort/server.key"
 RestartSec=5
 Restart=on-failure
 

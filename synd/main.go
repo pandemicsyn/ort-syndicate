@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/gholt/ring"
-	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
+	pb "github.com/pandemicsyn/syndicate/api/proto"
 
 	"log"
 	"net"
@@ -35,20 +35,20 @@ func Filter(vs []string, f func(string) bool) []string {
 }
 
 func getRingPaths(cfg *Config) (lastBuilder string, lastRing string, err error) {
-	_, err = os.Stat(filepath.Join(cfg.RingDir, "ort.builder"))
+	_, err = os.Stat(filepath.Join(cfg.RingDir, "oort.builder"))
 	if err != nil {
 		//TODO: no active builder found, so should we search for the most recent one
 		//we can find and load it and hopefully its matching ring?
 		return "", "", fmt.Errorf("No builder file found in %s", cfg.RingDir)
 	}
-	lastBuilder = filepath.Join(cfg.RingDir, "ort.builder")
-	_, err = os.Stat(filepath.Join(cfg.RingDir, "ort.ring"))
+	lastBuilder = filepath.Join(cfg.RingDir, "oort.builder")
+	_, err = os.Stat(filepath.Join(cfg.RingDir, "oort.ring"))
 	if err != nil {
-		//TODO: if we don't find a matching ort.ring should we just
+		//TODO: if we don't find a matching oort.ring should we just
 		// use ort.builder to make new one ?
 		return "", "", fmt.Errorf("No ring file found in %s", cfg.RingDir)
 	}
-	lastRing = filepath.Join(cfg.RingDir, "ort.ring")
+	lastRing = filepath.Join(cfg.RingDir, "oort.ring")
 	return lastBuilder, lastRing, nil
 }
 
@@ -64,7 +64,7 @@ func findLastRing(cfg *Config) (lastBuilder string, lastRing string, err error) 
 	}
 
 	fn := Filter(names, func(v string) bool {
-		return strings.HasSuffix(v, "-ort.builder")
+		return strings.HasSuffix(v, "-oort.builder")
 	})
 	sort.Strings(fn)
 	if len(fn) != 0 {
@@ -72,7 +72,7 @@ func findLastRing(cfg *Config) (lastBuilder string, lastRing string, err error) 
 	}
 
 	fn = Filter(names, func(v string) bool {
-		return strings.HasSuffix(v, "-ort.ring")
+		return strings.HasSuffix(v, "-oort.ring")
 	})
 	if len(fn) != 0 {
 		lastRing = filepath.Join(cfg.RingDir, fn[len(fn)-1])
@@ -135,7 +135,7 @@ func newRingDistServer() *ringslave {
 
 func main() {
 
-	cfg, err := loadConfig("/etc/ort/syndicate.toml")
+	cfg, err := loadConfig("/etc/oort/syndicate.toml")
 	if err != nil {
 		log.Println(err)
 		return

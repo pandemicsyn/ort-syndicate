@@ -121,7 +121,7 @@ func loadConfig(f string) (*Config, error) {
 		log.Println("Using default tier filter:", c.TierFilter)
 	}
 	if c.RingDir == "" {
-		c.RingDir = "/etc/ort/ring"
+		c.RingDir = "/etc/oort/ring"
 		d, err := os.Stat(c.RingDir)
 		if err != nil {
 			return nil, fmt.Errorf("Error check on ringdir: %s", err)

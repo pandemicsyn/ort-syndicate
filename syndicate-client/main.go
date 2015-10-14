@@ -14,8 +14,8 @@ import (
 
 	"github.com/gholt/brimtext"
 	"github.com/gholt/ring"
-	cc "github.com/pandemicsyn/ort-syndicate/api/cmdctrl"
-	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
+	cc "github.com/pandemicsyn/syndicate/api/cmdctrl"
+	pb "github.com/pandemicsyn/syndicate/api/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

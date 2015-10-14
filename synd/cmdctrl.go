@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gholt/ring"
-	cc "github.com/pandemicsyn/ort-syndicate/api/cmdctrl"
+	cc "github.com/pandemicsyn/syndicate/api/cmdctrl"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

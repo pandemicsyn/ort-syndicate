@@ -12,8 +12,8 @@ case "$1" in
     ;;
 esac
 
-if [ -f /etc/ort/syndicate.toml-sample ]; then
-  chmod 600 /etc/ort/syndicate.toml-sample
+if [ -f /etc/oort/syndicate.toml-sample ]; then
+  chmod 600 /etc/oort/syndicate.toml-sample
 fi
 
 dist() {
@@ -36,7 +36,7 @@ sysv() {
 
 systemd() {
   if which systemctl > /dev/null; then
-    cp /usr/share/ort-syndicate/systemd/synd.service /lib/systemd/system/synd.service
+    cp /usr/share/syndicate/systemd/synd.service /lib/systemd/system/synd.service
 
     systemctl daemon-reload || :
     if [ "$1" = "configure" ] ; then

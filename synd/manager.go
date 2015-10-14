@@ -10,7 +10,7 @@ import (
 
 	"github.com/gholt/brimtext"
 	"github.com/gholt/ring"
-	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
+	pb "github.com/pandemicsyn/syndicate/api/proto"
 	"golang.org/x/net/context"
 )
 
@@ -36,11 +36,11 @@ type ringmgr struct {
 }
 
 func (s *ringmgr) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-ort.builder", s.cfg.RingDir, version))
+	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-oort.builder", s.cfg.RingDir, version))
 	if err != nil {
 		return ring, builder, err
 	}
-	r, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-ort.ring", s.cfg.RingDir, version))
+	r, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-oort.ring", s.cfg.RingDir, version))
 	if err != nil {
 		return ring, builder, err
 	}
@@ -54,10 +54,10 @@ type ringChange struct {
 }
 
 func (s *ringmgr) applyRingChange(c *ringChange) error {
-	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-ort.builder", s.cfg.RingDir, c.v)); err != nil {
+	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-oort.builder", s.cfg.RingDir, c.v)); err != nil {
 		return err
 	}
-	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%d-ort.ring", s.cfg.RingDir, c.v)); err != nil {
+	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%d-oort.ring", s.cfg.RingDir, c.v)); err != nil {
 		return err
 	}
 	newRB, newBB, err := s.loadRingBuilderBytes(c.v)
@@ -68,12 +68,12 @@ func (s *ringmgr) applyRingChange(c *ringChange) error {
 	if err != nil {
 		return fmt.Errorf("Ring replicate failed: %s", err)
 	}
-	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/ort.builder", s.cfg.RingDir)); err != nil {
-		log.Println("Unable to persist ort.builder!")
+	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/oort.builder", s.cfg.RingDir)); err != nil {
+		log.Println("Unable to persist oort.builder!")
 		return err
 	}
-	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/ort.ring", s.cfg.RingDir)); err != nil {
-		log.Println("Unable to persist ort.ring!")
+	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/oort.ring", s.cfg.RingDir)); err != nil {
+		log.Println("Unable to persist oort.ring!")
 		return err
 	}
 	s.rb = newRB
@@ -89,7 +89,7 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got AddNode request")
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -124,7 +124,7 @@ func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, err
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got RemoveNode request for:", n.Id)
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -153,7 +153,7 @@ func (s *ringmgr) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, err
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got SetConf request")
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -314,7 +314,7 @@ func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.No
 	s.Lock()
 	defer s.Unlock()
 	log.Printf("Got Register request: %#v", r)
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/ort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.NodeConfig{}, err

@@ -1,55 +1,55 @@
-# ort-syndicate
+# syndicate
 
 ### basic installation
 
 ```
-go get -u github.com/pandemicsyn/ort-syndicate/synd
-go install -a github.com/pandemicsyn/ort-syndicate/synd
-mkdir -p /etc/ort
-cp -av ~/go/src/github.com/pandemicsyn/ort-syndicate/synd/server.crt /etc/ort
-cp -av ~/go/src/github.com/pandemicsyn/ort-syndicate/synd/server.key /etc/ort
+go get -u github.com/pandemicsyn/syndicate/synd
+go install -a github.com/pandemicsyn/syndicate/synd
+mkdir -p /etc/oort
+cp -av ~/go/src/github.com/pandemicsyn/syndicate/synd/server.crt /etc/oort
+cp -av ~/go/src/github.com/pandemicsyn/syndicate/synd/server.key /etc/oort
 ```
 
 ### setup
 
 You need to make sure:
 
-- /etc/ort exists
-- /etc/ort/ring exists
-- /etc/ort/ring/ort.builder exists and has at least one active node
-- /etc/ort/ring/ort.ring exists and has at least one active node
-- /etc/ort contains valid server.crt and server.key
+- /etc/oort exists
+- /etc/oort/ring exists
+- /etc/oort/ring/oort.builder exists and has at least one active node
+- /etc/oort/ring/oort.ring exists and has at least one active node
+- /etc/oort contains valid server.crt and server.key
 
 ### temporary dev step (this will go away)
 
 The first time you try and start synd you'll get an error like:
 
 ```
-root@syndicate1:~/go/src/github.com/pandemicsyn/ort-syndicate/synd# go run *.go -master=true 
-2015/09/07 19:56:18 open /etc/ort/syndicate.toml: no such file or directory
+root@syndicate1:~/go/src/github.com/pandemicsyn/syndicate/synd# go run *.go -master=true 
+2015/09/07 19:56:18 open /etc/oort/syndicate.toml: no such file or directory
 2015/09/07 19:56:18 Using default net filter: [10.0.0.0/8 192.168.0.0/16]
 2015/09/07 19:56:18 Using default tier filter: [z.*]
-2015/09/07 19:56:18 Found /etc/ort/ring/ort.builder, as last builder
-2015/09/07 19:56:18 Found /etc/ort/ring/ort.ring, as last ring
+2015/09/07 19:56:18 Found /etc/oort/ring/oort.builder, as last builder
+2015/09/07 19:56:18 Found /etc/oort/ring/oort.ring, as last ring
 2015/09/07 19:56:18 Ring version is: 1439924753845934663
-2015/09/07 19:56:18 Attempting to load ring/builder bytes: open /etc/ort/ring/1439924753845934663-ort.builder: no such file or directory
+2015/09/07 19:56:18 Attempting to load ring/builder bytes: open /etc/oort/ring/1439924753845934663-oort.builder: no such file or directory
 exit status 1
 ```
 
 To fix this: 
 
-- `cp -av /etc/ring/ort.builder /etc/ort/ring/$THERINGVERSION-ort.builder`
-- `cp -av /etc/ring/ort.ring /etc/ort/ring/$THERINGVERSION-ort.ring`
+- `cp -av /etc/ring/oort.builder /etc/oort/ring/$THERINGVERSION-oort.builder`
+- `cp -av /etc/ring/oort.ring /etc/oort/ring/$THERINGVERSION-oort.ring`
 
 If it works you'll see something along the lines of:
 
 ```
-fhines@47:~/go/src/github.com/pandemicsyn/ort-syndicate/synd (master)$ go build . && ./synd -master=true -ring_dir=/etc/ort/ring
-2015/09/07 19:58:38 open /etc/ort/syndicate.toml: no such file or directory
+fhines@47:~/go/src/github.com/pandemicsyn/syndicate/synd (master)$ go build . && ./synd -master=true -ring_dir=/etc/oort/ring
+2015/09/07 19:58:38 open /etc/oort/syndicate.toml: no such file or directory
 2015/09/07 19:58:38 Using default net filter: [10.0.0.0/8 192.168.0.0/16]
 2015/09/07 19:58:38 Using default tier filter: [z.*]
-2015/09/07 19:58:38 Found /etc/ort/ring/1439924753845934663-ort.builder, as last builder
-2015/09/07 19:58:38 Found /etc/ort/ring/1439924753845934663-ort.ring, as last ring
+2015/09/07 19:58:38 Found /etc/oort/ring/1439924753845934663-oort.builder, as last builder
+2015/09/07 19:58:38 Found /etc/oort/ring/1439924753845934663-oort.ring, as last ring
 2015/09/07 19:58:38 Ring version is: 1439924753845934663
 2015/09/07 19:58:38 !! Running without slaves, have no one to register !!
 2015/09/07 19:58:38 Master starting up on 8443...
@@ -57,7 +57,7 @@ fhines@47:~/go/src/github.com/pandemicsyn/ort-syndicate/synd (master)$ go build 
 
 ### syndicate-client
 
-go install github.com/pandemicsyn/ort-syndicate/syndicate-client
+go install github.com/pandemicsyn/syndicate/syndicate-client
 
 
 ```
@@ -76,9 +76,9 @@ go install github.com/pandemicsyn/ort-syndicate/syndicate-client
         set config=./path/to/config
 ```
 
-### Ortd 
+### Oortd 
 
-Ort either needs a valid SVR record setup or you need to set ORT_SYNDICATE_OVERRIDE=127.0.0.1:8443 when running ortd.
+Oort either needs a valid SVR record setup or you need to set OORT_SYNDICATE_OVERRIDE=127.0.0.1:8443 when running oortd.
 
 ### slaves
 
@@ -87,7 +87,7 @@ aren't working yet
 ### systemd init script
 
 A working systemd init script is provided in packaging/root/usr/share/synd/systemd/synd.service. To use it
-on Debian Jessie `cp packaging/root/usr/share/ort-syndicate/systemd/synd.service /lib/systemd/system`. You can then
+on Debian Jessie `cp packaging/root/usr/share/syndicate/systemd/synd.service /lib/systemd/system`. You can then
 stop/start/restart the synd service as usual ala `systemctl start synd`. its setup to capture and log to syslog.
 
 ### building packages

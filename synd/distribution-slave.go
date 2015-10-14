@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/gholt/ring"
-	pb "github.com/pandemicsyn/ort-syndicate/api/proto"
+	pb "github.com/pandemicsyn/syndicate/api/proto"
 )
 
 type ringslave struct {
@@ -41,7 +41,7 @@ func (s *ringslave) Store(c context.Context, r *pb.RingMsg) (*pb.StoreResult, er
 	}
 	s.version = r.Version
 
-	_, builder, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.ort.builder.gz", r.Version)))
+	_, builder, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.oort.builder.gz", r.Version)))
 	if err != nil || builder == nil {
 		return &pb.StoreResult{
 			Version: r.Version,
@@ -54,7 +54,7 @@ func (s *ringslave) Store(c context.Context, r *pb.RingMsg) (*pb.StoreResult, er
 	oldbuilder := s.b
 	s.b = builder
 
-	ring, _, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.ort.ring.gz", r.Version)))
+	ring, _, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.oort.ring.gz", r.Version)))
 	if err != nil || ring == nil || ring.Version() != r.Version {
 		//restore builder
 		s.b = oldbuilder
@@ -107,11 +107,11 @@ func writeBytes(filename string, b *[]byte) error {
 }
 
 func (s *ringslave) saveRingAndBuilderBytes(ring, builder *[]byte, version int64) (builderstatus, ringstatus bool, err error) {
-	err = writeBytes(path.Join(s.spath, fmt.Sprintf("%d.ort.builder.gz", version)), builder)
+	err = writeBytes(path.Join(s.spath, fmt.Sprintf("%d.oort.builder.gz", version)), builder)
 	if err != nil {
 		return false, false, err
 	}
-	err = writeBytes(path.Join(s.spath, fmt.Sprintf("%d.ort.ring.gz", version)), ring)
+	err = writeBytes(path.Join(s.spath, fmt.Sprintf("%d.oort.ring.gz", version)), ring)
 	if err != nil {
 		return true, false, err
 	}
@@ -135,7 +135,7 @@ func (s *ringslave) Setup(c context.Context, r *pb.RingMsg) (*pb.StoreResult, er
 	}
 	s.version = r.Version
 
-	_, builder, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.ort.builder.gz", r.Version)))
+	_, builder, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.oort.builder.gz", r.Version)))
 	if err != nil || builder == nil {
 		return &pb.StoreResult{
 			Version: r.Version,
@@ -148,7 +148,7 @@ func (s *ringslave) Setup(c context.Context, r *pb.RingMsg) (*pb.StoreResult, er
 	oldbuilder := s.b
 	s.b = builder
 
-	ring, _, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.ort.ring.gz", r.Version)))
+	ring, _, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.oort.ring.gz", r.Version)))
 	if err != nil || ring == nil || ring.Version() != r.Version {
 		//restore builder
 		s.b = oldbuilder
