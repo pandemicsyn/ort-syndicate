@@ -135,13 +135,13 @@ func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, err
 	}
 	b.RemoveNode(n.Id)
 	newRing := b.Ring()
+	go s.removeManagedNode(n.Id)
 	log.Println("Attempting to apply ring version:", newRing.Version())
 	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println(" Failed to apply ring change:", err)
 	}
 	log.Println("Ring version is now:", s.r.Version())
-	go s.removeManagedNode(n.Id)
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
