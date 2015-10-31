@@ -1,15 +1,5 @@
 # syndicate
 
-### basic installation
-
-```
-go get -u github.com/pandemicsyn/syndicate/synd
-go install -a github.com/pandemicsyn/syndicate/synd
-mkdir -p /etc/oort
-cp -av ~/go/src/github.com/pandemicsyn/syndicate/synd/server.crt /etc/oort
-cp -av ~/go/src/github.com/pandemicsyn/syndicate/synd/server.key /etc/oort
-```
-
 ### setup
 
 You need to make sure:
