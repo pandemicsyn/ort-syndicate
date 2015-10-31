@@ -45,7 +45,7 @@ func getRingPaths(cfg *Config) (lastBuilder string, lastRing string, err error) 
 	_, err = os.Stat(filepath.Join(cfg.RingDir, "oort.ring"))
 	if err != nil {
 		//TODO: if we don't find a matching oort.ring should we just
-		// use ort.builder to make new one ?
+		// use oort.builder to make new one ?
 		return "", "", fmt.Errorf("No ring file found in %s", cfg.RingDir)
 	}
 	lastRing = filepath.Join(cfg.RingDir, "oort.ring")
