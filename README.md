@@ -9,6 +9,14 @@ You need to make sure:
 - /etc/oort/ring/oort.builder exists and has at least one active node
 - /etc/oort/ring/oort.ring exists and has at least one active node
 - /etc/oort contains valid server.crt and server.key
+- /etc/oort/syndicate.toml contains a valid config like:
+```
+master = "true"
+ringdir = "/etc/oort/ring"
+certfile = "/etc/oort/server.crt"
+keyfile = "/etc/oort/server.key"
+tls = "true"
+```
 - /etc/oort/ring/oort.toml contains a valid config like:
 ```
 [CmdCtrlConfig]
