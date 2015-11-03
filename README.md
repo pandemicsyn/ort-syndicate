@@ -9,6 +9,24 @@ You need to make sure:
 - /etc/oort/ring/oort.builder exists and has at least one active node
 - /etc/oort/ring/oort.ring exists and has at least one active node
 - /etc/oort contains valid server.crt and server.key
+- /etc/oort/ring/oort.toml contains a valid config like:
+```
+[CmdCtrlConfig]
+ListenAddress = "0.0.0.0:4444"
+CertFile = "/etc/oort/server.crt"
+KeyFile = "/etc/oort/server.key"
+UseTLS = true
+Enabled = true
+
+[ValueStoreConfig]
+CompactionInterval = 42
+ValueCap = 4194302
+
+[TCPMsgRingConfig]
+UseTLS = true
+CertFile = "/etc/oort/server.crt"
+KeyFile = "/etc/oort/server.key"
+```
 
 ### temporary dev step (this will go away)
 
