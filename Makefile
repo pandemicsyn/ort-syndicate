@@ -5,7 +5,6 @@ ITTERATION := $(shell date +%s)
 allinone: deps localbuild install
 
 localbuild:
-	go get github.com/pandemicsyn/syndicate/synd
 	go install github.com/gholt/ring/ring
 	mkdir -p /etc/oort/ring
 	mkdir -p /etc/oort/oortd
@@ -16,7 +15,7 @@ localbuild:
 	ring /etc/oort/ring/oort.builder ring
 	go get github.com/pandemicsyn/ringver
 	go install github.com/pandemicsyn/ringver
-	RINGVER = $(shell ringver /etc/oort/ring/oort.ring)
+	RINGVER := $(shell ringver /etc/oort/ring/oort.ring)
 	cp -av /etc/oort/ring/oort.ring /etc/oort/ring/$(RINGVER)-oort.ring
 	cp -av /etc/oort/ring/oort.builder /etc/oort/ring/$(RINGVER)-oort.builder
 

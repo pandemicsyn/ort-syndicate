@@ -8,7 +8,7 @@ echo "Setting up dev env"
 
 apt-get update
 apt-get install -y --force-yes vim git build-essential autoconf libtool unzip
-update-alternatives -set editor /usr/bin/vim.basic
+update-alternatives --set editor /usr/bin/vim.basic
 
 # setup go
 mkdir -p /$USER/go/bin
@@ -31,7 +31,7 @@ bash ./configure && make && make check && make install
 ldconfig
 
 # setup grpc
-echo “deb http://http.debian.net/debian jessie-backports main” >> /etc/apt/sources.list
+echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
 apt-get update
 apt-get install libgrpc-dev
 go get google.golang.org/grpc
@@ -55,7 +55,7 @@ git remote add upstream git@github.com:pandemicsyn/oort.git
 # install syndicate and ort
 cd $GOPATH/src/github.com/pandemicsyn/syndicate
 make allinone
-cp -av packaging/root/usr/share/oort/systemd/synd.service /lib/systemd/system 
+cp -av packaging/root/usr/share/syndicate/systemd/synd.service /lib/systemd/system 
 systemctl daemon-reload
 
 go get github.com/pandemicsyn/oort/oortd
