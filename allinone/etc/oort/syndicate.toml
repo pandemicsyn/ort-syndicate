@@ -1,0 +1,5 @@
+master = "true"
+ringdir = "/etc/oort/ring"
+certfile = "/etc/oort/server.crt"
+keyfile = "/etc/oort/server.key"
+tls = "true"

@@ -1,0 +1,16 @@
+[CmdCtrlConfig]
+ListenAddress = "0.0.0.0:4444"
+CertFile = "/etc/oort/server.crt"
+KeyFile = "/etc/oort/server.key"
+UseTLS = true
+Enabled = true
+
+[ValueStoreConfig]
+CompactionInterval = 42
+ValueCap = 4194302
+
+[TCPMsgRingConfig]
+UseTLS = true
+CertFile = "/etc/oort/server.crt"
+KeyFile = "/etc/oort/server.key"
+
