@@ -10,6 +10,11 @@ apt-get update
 apt-get install -y --force-yes vim git build-essential autoconf libtool unzip
 update-alternatives --set editor /usr/bin/vim.basic
 
+# setup grpc
+echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
+apt-get update
+apt-get install libgrpc-dev -y --force-yes
+
 # setup go
 mkdir -p /$USER/go/bin
 export GVERSION=1.5.1
@@ -30,10 +35,6 @@ bash ./autogen.sh
 bash ./configure && make && make check && make install
 ldconfig
 
-# setup grpc
-echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
-apt-get update
-apt-get install libgrpc-dev
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
 go get github.com/golang/protobuf/protoc-gen-go
@@ -60,6 +61,7 @@ systemctl daemon-reload
 
 go get github.com/pandemicsyn/oort/oortd
 go install github.com/pandemicsyn/oort/oortd
+cd $GOPATH/src/github.com/pandemicsyn/oort
 cp -av packaging/root/usr/share/oort/systemd/oortd.service /lib/systemd/system 
 systemctl daemon-reload
 
