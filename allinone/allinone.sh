@@ -7,9 +7,8 @@ echo "Using $GIT_USER as user"
 echo "Setting up dev env"
 
 apt-get update
-apt-get install -yes vim
+apt-get install -y --force-yes vim git build-essential autoconf libtool
 update-alternative -set editor /usr/bin/vim.basic
-apt-get install git build-essential autoconf libtool
 
 # setup go
 mkdir -p /$USER/go/bin
@@ -25,39 +24,39 @@ source /$USER/.bashrc
 
 # setup protobuf
 git clone https://github.com/google/protobuf.git
-cd protobuf.git
+cd protobuf
 ./autogen.sh
 ./configure && make && make check && make install
 ldconfig
 
 # setup grpc
-DISTRIB=`lsb_release -c -s`
-if [ "$DISTRIBG" == "jessie" ]; then
-    echo “deb http://http.debian.net/debian jessie-backports main” >> /etc/apt/sources.list
-    apt-get update
-    apt-get install libgrpc-dev
-else 
-    echo "!! Y U NO USE JESSIE? Now you have to build grpc yourself !!"
-fi
+echo “deb http://http.debian.net/debian jessie-backports main” >> /etc/apt/sources.list
+apt-get update
+apt-get install libgrpc-dev
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
 go get github.com/golang/protobuf/protoc-gen-go
 
-# setup syndicate
+# get syndicate and setup repos
 mkdir -p $GOPATH/src/github.com/pandemicsyn
 cd $GOPATH/src/github.com/pandemicsyn/
 git clone git@github.com:$GIT_USER/syndicate.git
 cd syndicate
-git remote add upstream https://github.com/pandemicsyn/syndicate.git
-make allinone
-cp -av packaging/root/usr/share/oort/systemd/synd.service /lib/systemd/system 
-systemctl daemon-reload
+git remote add upstream git@github.com:pandemicsyn/syndicate.git
 
-# setup oort
+# get oort and setup repos
 cd $GOPATH/src/github.com/pandemicsyn
 git clone git@github.com:$GIT_USER/oort.git
 cd oort
 git remote add upstream git@github.com:pandemicsyn/oort.git
+
+
+# install syndicate and ort
+cd $GOPATH/src/github.com/pandemicsyn/syndicate
+make allinone
+cp -av packaging/root/usr/share/oort/systemd/synd.service /lib/systemd/system 
+systemctl daemon-reload
+
 go get github.com/pandemicsyn/oort/oortd
 go install github.com/pandemicsyn/oort/oortd
 cp -av packaging/root/usr/share/oort/systemd/oortd.service /lib/systemd/system 
