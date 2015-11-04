@@ -28,10 +28,15 @@ echo "export PATH=\$PATH:\$GOPATH/bin" >> /$USER/.bashrc
 source /$USER/.bashrc
 
 # setup protobuf
-cd $HOME
-git clone https://github.com/google/protobuf.git
-cd protobuf
-./autogen.sh && ./configure && make && make check && make install && ldconfig
+if [ "$BUILDPROTOBUF" = "yes" ]; then
+    echo "Building with protobuf support, this gonna take awhile"
+    cd $HOME
+    git clone https://github.com/google/protobuf.git
+    cd protobuf
+    ./autogen.sh && ./configure && make && make check && make install && ldconfig
+else 
+    echo "Built withOUT protobuf"
+fi
 
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
@@ -53,8 +58,22 @@ git remote add upstream git@github.com:pandemicsyn/oort.git
 
 # install syndicate and ort
 cd $GOPATH/src/github.com/pandemicsyn/syndicate
-make allinone
+go install github.com/gholt/ring/ring
+mkdir -p /etc/oort/ring
+mkdir -p /etc/oort/oortd
+cp -av allinone/etc/oort/* /etc/oort
+make deps
+go install github.com/gholt/ring/ring
+ring /etc/oort/ring/oort.builder create replicas=1 configfile=/etc/oort/oort.toml
+ring /etc/oort/ring/oort.builder add active=true capacity=1000 tier0=removeme
+ring /etc/oort/ring/oort.builder ring
+go get github.com/pandemicsyn/ringver
+go install github.com/pandemicsyn/ringver
+RINGVER=`ringver wtf /etc/oort/ring/oort.ring`
+cp -av /etc/oort/ring/oort.ring /etc/oort/ring/$RINGVER-oort.ring
+cp -av /etc/oort/ring/oort.builder /etc/oort/ring/$RINGVER-oort.builder
 cp -av packaging/root/usr/share/syndicate/systemd/synd.service /lib/systemd/system 
+make install
 systemctl daemon-reload
 
 go get github.com/pandemicsyn/oort/oortd

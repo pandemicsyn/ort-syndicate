@@ -2,23 +2,6 @@ SHA := $(shell git rev-parse --short HEAD)
 VERSION := $(shell cat VERSION)
 ITTERATION := $(shell date +%s)
 
-allinone: deps localbuild install
-
-localbuild:
-	go install github.com/gholt/ring/ring
-	mkdir -p /etc/oort/ring
-	mkdir -p /etc/oort/oortd
-	cp -av allinone/etc/oort/* /etc/oort
-	go install github.com/gholt/ring/ring
-	ring /etc/oort/ring/oort.builder create replicas=1 configfile=/etc/oort/oort.toml
-	ring /etc/oort/ring/oort.builder add active=true capacity=1000 tier0=removeme 
-	ring /etc/oort/ring/oort.builder ring
-	go get github.com/pandemicsyn/ringver
-	go install github.com/pandemicsyn/ringver
-	RINGVER := $(shell ringver /etc/oort/ring/oort.ring)
-	cp -av /etc/oort/ring/oort.ring /etc/oort/ring/$(RINGVER)-oort.ring
-	cp -av /etc/oort/ring/oort.builder /etc/oort/ring/$(RINGVER)-oort.builder
-
 deps:
 	go get -u google.golang.org/grpc
 	go get -u github.com/golang/protobuf/proto
