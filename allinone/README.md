@@ -1,0 +1,4 @@
+- Obtain a server with at least 4GB of ram runnind debian jessie
+- wget https://raw.githubusercontent.com/pandemicsyn/syndicate/master/allinone/allinone.sh
+- GIT_USER=YOURGHUSRENAME bash allinone.sh
+- Optionally use GIT_USER=YOURGHUSERNAME BUILDPROTOBUF=yes bash allinone.sh to also build protobuf 3
