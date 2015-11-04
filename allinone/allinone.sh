@@ -7,8 +7,8 @@ echo "Using $GIT_USER as user"
 echo "Setting up dev env"
 
 apt-get update
-apt-get install -y --force-yes vim git build-essential autoconf libtool
-update-alternative -set editor /usr/bin/vim.basic
+apt-get install -y --force-yes vim git build-essential autoconf libtool unzip
+update-alternatives -set editor /usr/bin/vim.basic
 
 # setup go
 mkdir -p /$USER/go/bin
@@ -23,10 +23,11 @@ echo "export PATH=\$PATH:\$GOPATH/bin" >> /$USER/.bashrc
 source /$USER/.bashrc
 
 # setup protobuf
+cd $HOME
 git clone https://github.com/google/protobuf.git
 cd protobuf
-./autogen.sh
-./configure && make && make check && make install
+bash ./autogen.sh
+bash ./configure && make && make check && make install
 ldconfig
 
 # setup grpc

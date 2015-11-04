@@ -5,7 +5,7 @@ ITTERATION := $(shell date +%s)
 allinone: deps localbuild install
 
 localbuild:
-	go get github.com/pandemicsyn/synd
+	go get github.com/pandemicsyn/syndicate/synd
 	go install github.com/gholt/ring/ring
 	mkdir -p /etc/oort/ring
 	mkdir -p /etc/oort/oortd
