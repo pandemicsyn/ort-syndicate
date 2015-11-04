@@ -58,7 +58,6 @@ git remote add upstream git@github.com:pandemicsyn/oort.git
 
 # install syndicate and ort
 cd $GOPATH/src/github.com/pandemicsyn/syndicate
-go install github.com/gholt/ring/ring
 mkdir -p /etc/oort/ring
 mkdir -p /etc/oort/oortd
 cp -av allinone/etc/oort/* /etc/oort
@@ -73,6 +72,7 @@ RINGVER=`ringver /etc/oort/ring/oort.ring`
 cp -av /etc/oort/ring/oort.ring /etc/oort/ring/$RINGVER-oort.ring
 cp -av /etc/oort/ring/oort.builder /etc/oort/ring/$RINGVER-oort.builder
 cp -av packaging/root/usr/share/syndicate/systemd/synd.service /lib/systemd/system 
+go get github.com/pandemicsyn/syndicate/synd
 make install
 systemctl daemon-reload
 
@@ -80,9 +80,15 @@ go get github.com/pandemicsyn/oort/oortd
 go install github.com/pandemicsyn/oort/oortd
 cd $GOPATH/src/github.com/pandemicsyn/oort
 cp -av packaging/root/usr/share/oort/systemd/oortd.service /lib/systemd/system 
+echo "OORT_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oortd
 systemctl daemon-reload
 
 # setup apid deps
 go get github.com/pandemicsyn/oort/apid
 # setup cfs deps
 go get github.com/pandemicsyn/oort/cfs
+
+echo "To start services run:"
+echo "systemctl start synd"
+echo "systemctl start oortd"
+
