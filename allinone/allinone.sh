@@ -69,7 +69,7 @@ ring /etc/oort/ring/oort.builder add active=true capacity=1000 tier0=removeme
 ring /etc/oort/ring/oort.builder ring
 go get github.com/pandemicsyn/ringver
 go install github.com/pandemicsyn/ringver
-RINGVER=`ringver wtf /etc/oort/ring/oort.ring`
+RINGVER=`ringver /etc/oort/ring/oort.ring`
 cp -av /etc/oort/ring/oort.ring /etc/oort/ring/$RINGVER-oort.ring
 cp -av /etc/oort/ring/oort.builder /etc/oort/ring/$RINGVER-oort.builder
 cp -av packaging/root/usr/share/syndicate/systemd/synd.service /lib/systemd/system 
