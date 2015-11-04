@@ -7,7 +7,7 @@ echo "Using $GIT_USER as user"
 echo "Setting up dev env"
 
 apt-get update
-apt-get install -y --force-yes vim git build-essential autoconf libtool unzip
+apt-get install -y --force-yes vim git build-essential autoconf libtool libtool-bin unzip
 update-alternatives --set editor /usr/bin/vim.basic
 
 # setup grpc
@@ -31,9 +31,7 @@ source /$USER/.bashrc
 cd $HOME
 git clone https://github.com/google/protobuf.git
 cd protobuf
-bash ./autogen.sh
-bash ./configure && make && make check && make install
-ldconfig
+./autogen.sh && ./configure && make && make check && make install && ldconfig
 
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
