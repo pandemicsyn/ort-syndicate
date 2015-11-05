@@ -55,6 +55,13 @@ git clone git@github.com:$GIT_USER/oort.git
 cd oort
 git remote add upstream git@github.com:pandemicsyn/oort.git
 
+# get formic/cfs and setup repos
+mkdir -o $GOPATH/src/github.com/creiht
+cd $GOPATH/src/github.com/creiht
+git clone git@github.com:$GIT_USER/formic.git
+cd formic
+git remote add upstream git@github.com:creiht/formic.git
+
 
 # install syndicate and ort
 cd $GOPATH/src/github.com/pandemicsyn/syndicate
@@ -83,10 +90,10 @@ cp -av packaging/root/usr/share/oort/systemd/oortd.service /lib/systemd/system
 echo "OORT_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oortd
 systemctl daemon-reload
 
-# setup apid deps
-go get github.com/pandemicsyn/oort/apid
+# setup formic deps
+go get github.com/creiht/formic/formic
 # setup cfs deps
-go get github.com/pandemicsyn/oort/cfs
+go get github.com/creiht/formic/cfs
 
 echo "To start services run:"
 echo "systemctl start synd"
