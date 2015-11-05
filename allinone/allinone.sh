@@ -7,7 +7,7 @@ echo "Using $GIT_USER as user"
 echo "Setting up dev env"
 
 apt-get update
-apt-get install -y --force-yes vim git build-essential autoconf libtool libtool-bin unzip
+apt-get install -y --force-yes vim git build-essential autoconf libtool libtool-bin unzip fuse
 update-alternatives --set editor /usr/bin/vim.basic
 
 # setup grpc
@@ -26,6 +26,18 @@ echo "export PATH=\$PATH:/usr/local/go/bin" >> /$USER/.bashrc
 echo "export GOPATH=/root/go" >> /$USER/.bashrc
 echo "export PATH=\$PATH:\$GOPATH/bin" >> /$USER/.bashrc
 source /$USER/.bashrc
+
+# sup3r sekret option to install vim-go and basic vim-go friendly .vimrc
+if [ "$FANCYVIM" = "yes" ]; then
+    mkdir -p ~/.vim/autoload ~/.vim/bundle && curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
+    git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
+    apt-get install -y --force-yes vim-youcompleteme
+    go get golang.org/x/tools/cmd/goimports
+    git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
+    curl -o ~/.vimrc https://raw.githubusercontent.com/pandemicsyn/syndicate/master/allinone/.vimrc 
+else
+    echo "You didn't set FANCYVIM=yes so no awesome vim-go setup for you."
+fi
 
 # setup protobuf
 if [ "$BUILDPROTOBUF" = "yes" ]; then
