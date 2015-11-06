@@ -4,17 +4,14 @@ machine:
     - mkdir ~/go1.5.1
     - tar -C ~/go1.5.1 -xzf go1.5.1.linux-amd64.tar.gz
   environment:
-    GOROOT: ${HOME}/go1.5.1
+    GOROOT: ${HOME}/go1.5.1/go
     PATH: ${GOROOT}/bin:${PATH}
     GO15VENDOREXPERIMENT: 1
     GOPATH: ${HOME}/go
-    PPATH: $GOPATH/src/github.com/$CIRCLE_PROJECT_REPONAME/$CIRCLE_PROJECT_USERNAME 
+    PPATH: $GOPATH/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
     BUILDPATH: $PPATH/packaging/root/usr/local/bin
   post:
     - go version
-    - echo $PATH
-    - ls
-    - pwd
 dependencies:
   pre:
     - mkdir -p $PPATH
@@ -36,7 +33,7 @@ test:
     - go install -v github.com/pandemicsyn/syndicate/synd
     - go install -v github.com/pandemicsyn/syndicate/syndicate-client
   post:
-    - GOOS=linux GOARCH=amd64 GOPATH=$(echo $GOPATH | tr ':' '\n' | head -n 1) make build:
+    - GOOS=linux GOARCH=amd64 make build:
         pwd:
             "$PPATH"
 deployment:
