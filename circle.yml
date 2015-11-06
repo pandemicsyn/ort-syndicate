@@ -39,10 +39,12 @@ deployment:
     owner: pandemicsyn
     commands:
       - go get github.com/tcnksm/ghr
+      - go install github.com/tcnksm/ghr
       - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease ci-`cat VERSION` $BUILDPATH
   qa:
     branch: qa
     owner: pandemicsyn
     commands:
       - go get github.com/tcnksm/ghr
+      - go install github.com/tcnksm/ghr
       - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease qa-`cat VERSION` $BUILDPATH
