@@ -18,7 +18,8 @@ dependencies:
     - ln -s $PPATH $CIRCLE_PROJECT_REPONAME
   override:
     - go get -v ./...:
-      pwd $PPATH
+        pwd:
+            "$PPATH"
 general:
   artifacts:
     - "$PPATH/packaging/root/usr/local/bin"
@@ -32,7 +33,8 @@ test:
     - go install -v github.com/pandemicsyn/syndicate/syndicate-client
   post:
     - GOOS=linux GOARCH=amd64 GOPATH=$(echo $GOPATH | tr ':' '\n' | head -n 1) make build:
-      pwd $PPATH
+        pwd:
+            "$PPATH"
 deployment:
   ci:
     branch: ci
