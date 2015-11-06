@@ -1,6 +1,7 @@
 machine:
   pre:
     - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
+    - mkdir ~/go1.5.1
     - tar zxvf go1.5.1.linux-amd64.tar.gz -C ~/go1.5.1
   environment:
     GOROOT: ${HOME}/go1.5.1
