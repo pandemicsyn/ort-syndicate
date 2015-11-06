@@ -13,8 +13,16 @@ deps:
 build:
 	mkdir -p packaging/output
 	mkdir -p packaging/root/usr/local/bin
-	go build -o packaging/root/usr/local/bin/synd github.com/pandemicsyn/syndicate/synd
-	go build -o packaging/root/usr/local/bin/syndicate-client github.com/pandemicsyn/syndicate/syndicate-client
+	go build -i -v -o packaging/root/usr/local/bin/synd --ldflags " \
+		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
+		-X main.syndVersion=$(shell git rev-parse HEAD) \
+		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
+		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)" github.com/pandemicsyn/syndicate/synd 
+	go build -i -v -o packaging/root/usr/local/bin/syndicate-client --ldflags " \
+		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
+		-X main.syndicateClientVersion=$(shell git rev-parse HEAD) \
+		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
+		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)"  github.com/pandemicsyn/syndicate/syndicate-client
 
 clean:
 	rm -rf packaging/output
@@ -23,8 +31,16 @@ clean:
 
 install:
 	#install -t /usr/local/bin packaging/root/usr/local/bin/synd
-	go install github.com/pandemicsyn/syndicate/synd
-	go install github.com/pandemicsyn/syndicate/syndicate-client
+	go install --ldflags " \
+		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
+		-X main.syndVersion=$(shell git rev-parse HEAD) \
+		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
+		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)" github.com/pandemicsyn/syndicate/synd 
+	go install --ldflags " \
+		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
+		-X main.syndicateClientVersion=$(shell git rev-parse HEAD) \
+		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
+		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)"  github.com/pandemicsyn/syndicate/syndicate-client
 
 run:
 	go run synd/*.go

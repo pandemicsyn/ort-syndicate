@@ -22,9 +22,14 @@ import (
 )
 
 var (
-	syndicateAddr = flag.String("addr", "127.0.0.1:8443", "syndicate host to connect too")
-	setRingConfig = flag.String("ringconfig", "./ring.toml", "the config bytes to load into the main ring config")
+	syndicateAddr    = flag.String("addr", "127.0.0.1:8443", "syndicate host to connect too")
+	printVersionInfo = flag.Bool("version", false, "print version/build info")
 )
+
+var syndicateClientVersion string
+var ringVersion string
+var buildDate string
+var goVersion string
 
 type SyndClient struct {
 	conn   *grpc.ClientConn
@@ -107,6 +112,14 @@ set config=./path/to/config
 }
 
 func main() {
+	flag.Parse()
+	if *printVersionInfo {
+		fmt.Println("syndicate-client:", syndicateClientVersion)
+		fmt.Println("ring version:", ringVersion)
+		fmt.Println("build date:", buildDate)
+		fmt.Println("go version:", goVersion)
+		return
+	}
 	s, err := New()
 	if err != nil {
 		panic(err)
