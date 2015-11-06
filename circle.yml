@@ -8,10 +8,11 @@ machine:
     PATH: ${GOROOT}/bin:${PATH}
     GO15VENDOREXPERIMENT: 1
     GOPATH: ${HOME}/go
-    PPATH: $GOPATH/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+    PPATH: ${HOME}/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
     BUILDPATH: $PPATH/packaging/root/usr/local/bin
   post:
     - go version
+    - echo $PPATH
 dependencies:
   pre:
     - mkdir -p $PPATH
@@ -19,8 +20,7 @@ dependencies:
     - ln -s $PPATH ~/$CIRCLE_PROJECT_REPONAME
   override:
     - go get -v ./...:
-        pwd:
-            "$PPATH"
+        pwd: $PPATH
 general:
   artifacts:
     - "$PPATH/packaging/root/usr/local/bin"
@@ -34,8 +34,7 @@ test:
     - go install -v github.com/pandemicsyn/syndicate/syndicate-client
   post:
     - GOOS=linux GOARCH=amd64 make build:
-        pwd:
-            "$PPATH"
+        pwd: $PPATH
 deployment:
   ci:
     branch: ci
