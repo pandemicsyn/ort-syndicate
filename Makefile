@@ -10,18 +10,6 @@ deps:
 	go get github.com/gholt/ring/ring
 	go get github.com/gholt/store
 
-cibuild:
-	env GOOS=linux go build -o packaging/root/usr/local/bin/synd --ldflags " \
-		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
-		-X main.syndVersion=$(shell git rev-parse HEAD) \
-		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
-		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)" github.com/pandemicsyn/syndicate/synd 
-	go build -o packaging/root/usr/local/bin/syndicate-client --ldflags " \
-		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
-		-X main.syndicateClientVersion=$(shell git rev-parse HEAD) \
-		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
-		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)"  github.com/pandemicsyn/syndicate/syndicate-client
-
 build:
 	mkdir -p packaging/output
 	mkdir -p packaging/root/usr/local/bin

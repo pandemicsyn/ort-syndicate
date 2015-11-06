@@ -24,7 +24,7 @@ test:
     - go install -v github.com/pandemicsyn/syndicate/synd
     - go install -v github.com/pandemicsyn/syndicate/syndicate-client
   post:
-    - GOOS=linux GOARCH=amd64 make build
+    - GOOS=linux GOARCH=amd64 GOPATH=$(echo $GOPATH | tr ':' '\n' | head -n 1) make build
 deployment:
   ci:
     branch: ci
