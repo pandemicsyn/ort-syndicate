@@ -1,40 +1,48 @@
 machine:
   pre:
     - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
-    - tar zxvf go1.5.1.linux-amd64.tar.gz
+    - tar zxvf go1.5.1.linux-amd64.tar.gz -C ~/go1.5.1
   environment:
-    GOROOT: ${HOME}/go
+    GOROOT: ${HOME}/go1.5.1
     PATH: ${GOROOT}/bin:${PATH}
     GO15VENDOREXPERIMENT: 1
+    GOPATH: ${HOME}/go
+    PPATH: $GOPATH/src/github.com/$CIRCLE_PROJECT_REPONAME/$CIRCLE_PROJECT_USERNAME 
+    BUILDPATH: $PPATH/packaging/root/usr/local/bin
   post:
     - go version
 dependencies:
   pre:
-    - go get github.com/gholt/ring
+    - mkdir -p $PPATH
+    - mv ./$CIRCLE_PROJECT_REPONAME $PPATH
+    - ln -s $PPATH $CIRCLE_PROJECT_REPONAME
+  override:
+    - go get -v ./...:
+      pwd $PPATH
 general:
   artifacts:
-    - "packaging/root/usr/local/bin"
+    - "$PPATH/packaging/root/usr/local/bin"
 test:
   pre:
     - go version
   override:
     - go test -i github.com/pandemicsyn/syndicate/synd
     - go test -i github.com/pandemicsyn/syndicate/syndicate-client
-    - go test ./...
     - go install -v github.com/pandemicsyn/syndicate/synd
     - go install -v github.com/pandemicsyn/syndicate/syndicate-client
   post:
-    - GOOS=linux GOARCH=amd64 GOPATH=$(echo $GOPATH | tr ':' '\n' | head -n 1) make build
+    - GOOS=linux GOARCH=amd64 GOPATH=$(echo $GOPATH | tr ':' '\n' | head -n 1) make build:
+      pwd $PPATH
 deployment:
   ci:
     branch: ci
     owner: pandemicsyn
     commands:
       - go get github.com/tcnksm/ghr
-      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease ci-`cat VERSION` packaging/root/usr/local/bin
+      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease ci-`cat VERSION` $BUILDPATH
   qa:
     branch: qa
     owner: pandemicsyn
     commands:
       - go get github.com/tcnksm/ghr
-      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease qa-`cat VERSION` packaging/root/usr/local/bin
+      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease qa-`cat VERSION` $BUILDPATH
