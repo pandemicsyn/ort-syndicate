@@ -2,7 +2,7 @@ machine:
   pre:
     - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
     - mkdir ~/go1.5.1
-    - tar zxvf go1.5.1.linux-amd64.tar.gz -C ~/go1.5.1
+    - tar -C ~/go1.5.1 -xzf go1.5.1.linux-amd64.tar.gz
   environment:
     GOROOT: ${HOME}/go1.5.1
     PATH: ${GOROOT}/bin:${PATH}
@@ -12,11 +12,14 @@ machine:
     BUILDPATH: $PPATH/packaging/root/usr/local/bin
   post:
     - go version
+    - echo $PATH
+    - ls
+    - pwd
 dependencies:
   pre:
     - mkdir -p $PPATH
-    - mv ./$CIRCLE_PROJECT_REPONAME $PPATH
-    - ln -s $PPATH $CIRCLE_PROJECT_REPONAME
+    - mv ~/$CIRCLE_PROJECT_REPONAME $PPATH
+    - ln -s $PPATH ~/$CIRCLE_PROJECT_REPONAME
   override:
     - go get -v ./...:
         pwd:
