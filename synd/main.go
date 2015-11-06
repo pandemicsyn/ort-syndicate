@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"sort"
@@ -16,6 +17,14 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+var (
+	printVersionInfo = flag.Bool("version", false, "print version/build info")
+)
+var syndVersion string
+var ringVersion string
+var goVersion string
+var buildDate string
 
 // FatalIf is just a lazy log/panic on error func
 func FatalIf(err error, msg string) {
@@ -134,6 +143,14 @@ func newRingDistServer() *ringslave {
 }
 
 func main() {
+	flag.Parse()
+	if *printVersionInfo {
+		fmt.Println("syndicate-client:", syndVersion)
+		fmt.Println("ring version:", ringVersion)
+		fmt.Println("build date:", buildDate)
+		fmt.Println("go version:", goVersion)
+		return
+	}
 
 	cfg, err := loadConfig("/etc/oort/syndicate.toml")
 	if err != nil {
