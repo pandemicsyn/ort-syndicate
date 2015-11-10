@@ -35,6 +35,8 @@ if [ "$FANCYVIM" = "yes" ]; then
     go get golang.org/x/tools/cmd/goimports
     git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
     curl -o ~/.vimrc https://raw.githubusercontent.com/pandemicsyn/syndicate/master/allinone/.vimrc 
+    go get code.google.com/p/rog-go/exp/cmd/godef
+    go get github.com/nsf/gocode
 else
     echo "You didn't set FANCYVIM=yes so no awesome vim-go setup for you."
 fi

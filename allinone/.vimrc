@@ -1,6 +1,13 @@
-call pathogen#infect()
 syntax on
+set mouse=a
+set nocompatible
+call pathogen#infect()
 filetype plugin indent on
+set noshowmode
+set hlsearch
+set title
+set smartindent
+set incsearch
 autocmd FileType go setlocal noexpandtab shiftwidth=4 tabstop=4 softtabstop=4 nolist
 let g:go_fmt_command = "goimports"
 
