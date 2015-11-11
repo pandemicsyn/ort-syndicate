@@ -7,7 +7,7 @@ echo "Using $GIT_USER as user"
 echo "Setting up dev env"
 
 apt-get update
-apt-get install -y --force-yes vim git build-essential autoconf libtool libtool-bin unzip fuse
+apt-get install -y --force-yes vim git build-essential autoconf libtool libtool-bin unzip fuse mercurial
 update-alternatives --set editor /usr/bin/vim.basic
 
 # setup grpc
@@ -29,14 +29,16 @@ source /$USER/.bashrc
 
 # sup3r sekret option to install vim-go and basic vim-go friendly .vimrc
 if [ "$FANCYVIM" = "yes" ]; then
+    echo "Performing fancy vim install"
     mkdir -p ~/.vim/autoload ~/.vim/bundle && curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
     git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
     apt-get install -y --force-yes vim-youcompleteme
     go get golang.org/x/tools/cmd/goimports
     git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
     curl -o ~/.vimrc https://raw.githubusercontent.com/pandemicsyn/syndicate/master/allinone/.vimrc 
-    go get code.google.com/p/rog-go/exp/cmd/godef
     go get github.com/nsf/gocode
+    echo "Fancy VIM install complete. You may way want to open vim and run ':GoInstallBinaries' the first time you use it"
+    sleep 1
 else
     echo "You didn't set FANCYVIM=yes so no awesome vim-go setup for you."
 fi
@@ -48,9 +50,12 @@ if [ "$BUILDPROTOBUF" = "yes" ]; then
     git clone https://github.com/google/protobuf.git
     cd protobuf
     ./autogen.sh && ./configure && make && make check && make install && ldconfig
+    echo "Protobuf build done...hopefully"
 else 
     echo "Built withOUT protobuf"
 fi
+
+echo "Setting up the imporant bits..."
 
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
