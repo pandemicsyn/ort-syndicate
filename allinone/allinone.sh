@@ -109,10 +109,11 @@ cp -av packaging/root/usr/share/oort/systemd/oortd.service /lib/systemd/system
 echo "OORT_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oortd
 systemctl daemon-reload
 
-# setup formic deps
-go get github.com/creiht/formic/formic
-# setup cfs deps
+# setup formic & cfs deps
+go get github.com/creiht/formic/formicd
+go install github.com/creiht/formic/formicd
 go get github.com/creiht/formic/cfs
+go install github.com/creiht/formic/cfs
 
 echo "To start services run:"
 echo "systemctl start synd"
