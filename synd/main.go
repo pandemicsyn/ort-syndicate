@@ -21,6 +21,7 @@ import (
 var (
 	printVersionInfo = flag.Bool("version", false, "print version/build info")
 )
+
 var syndVersion string
 var ringVersion string
 var goVersion string
@@ -143,18 +144,16 @@ func newRingDistServer() *ringslave {
 }
 
 func main() {
-	flag.Parse()
+	cfg, err := loadConfig("/etc/oort/syndicate.toml")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	if *printVersionInfo {
 		fmt.Println("syndicate-client:", syndVersion)
 		fmt.Println("ring version:", ringVersion)
 		fmt.Println("build date:", buildDate)
 		fmt.Println("go version:", goVersion)
-		return
-	}
-
-	cfg, err := loadConfig("/etc/oort/syndicate.toml")
-	if err != nil {
-		log.Println(err)
 		return
 	}
 	if cfg.Master {
