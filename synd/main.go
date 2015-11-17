@@ -90,7 +90,7 @@ func findLastRing(cfg *Config) (lastBuilder string, lastRing string, err error) 
 	return lastBuilder, lastRing, nil
 }
 
-func newRingMgrServer(cfg *Config) (*ringmgr, error) {
+func newSyndicateServer(cfg *Config) (*ringmgr, error) {
 	var err error
 	s := new(ringmgr)
 	s.cfg = cfg
@@ -167,10 +167,9 @@ func main() {
 		}
 		s := grpc.NewServer(opts...)
 
-		r, err := newRingMgrServer(cfg)
+		r, err := newSyndicateServer(cfg)
 		FatalIf(err, "Couldn't prep ring mgr server")
-		pb.RegisterRingMgrServer(s, r)
-
+		pb.RegisterSyndicateServer(s, r)
 		log.Printf("Master starting up on %d...\n", cfg.Port)
 		s.Serve(l)
 	} else {

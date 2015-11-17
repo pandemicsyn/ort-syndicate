@@ -33,7 +33,7 @@ var goVersion string
 
 type SyndClient struct {
 	conn   *grpc.ClientConn
-	client pb.RingMgrClient
+	client pb.SyndicateClient
 }
 
 type CmdCtrlClient struct {
@@ -85,7 +85,7 @@ func New() (*SyndClient, error) {
 	if err != nil {
 		return &SyndClient{}, fmt.Errorf("Failed to dial ring server for config: %v", err)
 	}
-	s.client = pb.NewRingMgrClient(s.conn)
+	s.client = pb.NewSyndicateClient(s.conn)
 	return &s, nil
 }
 

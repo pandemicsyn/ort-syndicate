@@ -201,6 +201,23 @@ func (m *SearchResult) GetNodes() []*Node {
 	return nil
 }
 
+func init() {
+	proto1.RegisterType((*RingMsg)(nil), "proto.RingMsg")
+	proto1.RegisterType((*StoreResult)(nil), "proto.StoreResult")
+	proto1.RegisterType((*StatusRequest)(nil), "proto.StatusRequest")
+	proto1.RegisterType((*StatusMsg)(nil), "proto.StatusMsg")
+	proto1.RegisterType((*EmptyMsg)(nil), "proto.EmptyMsg")
+	proto1.RegisterType((*RingStatus)(nil), "proto.RingStatus")
+	proto1.RegisterType((*Node)(nil), "proto.Node")
+	proto1.RegisterType((*ModifyMsg)(nil), "proto.ModifyMsg")
+	proto1.RegisterType((*RingConf)(nil), "proto.RingConf")
+	proto1.RegisterType((*Conf)(nil), "proto.Conf")
+	proto1.RegisterType((*RegisterRequest)(nil), "proto.RegisterRequest")
+	proto1.RegisterType((*NodeConfig)(nil), "proto.NodeConfig")
+	proto1.RegisterType((*Ring)(nil), "proto.Ring")
+	proto1.RegisterType((*SearchResult)(nil), "proto.SearchResult")
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -343,9 +360,9 @@ var _RingDist_serviceDesc = grpc.ServiceDesc{
 	Streams: []grpc.StreamDesc{},
 }
 
-// Client API for RingMgr service
+// Client API for Syndicate service
 
-type RingMgrClient interface {
+type SyndicateClient interface {
 	AddNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
 	RemoveNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
 	ModNode(ctx context.Context, in *ModifyMsg, opts ...grpc.CallOption) (*RingStatus, error)
@@ -359,116 +376,116 @@ type RingMgrClient interface {
 	RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error)
 }
 
-type ringMgrClient struct {
+type syndicateClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewRingMgrClient(cc *grpc.ClientConn) RingMgrClient {
-	return &ringMgrClient{cc}
+func NewSyndicateClient(cc *grpc.ClientConn) SyndicateClient {
+	return &syndicateClient{cc}
 }
 
-func (c *ringMgrClient) AddNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+func (c *syndicateClient) AddNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
 	out := new(RingStatus)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/AddNode", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/AddNode", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) RemoveNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+func (c *syndicateClient) RemoveNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
 	out := new(RingStatus)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/RemoveNode", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/RemoveNode", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) ModNode(ctx context.Context, in *ModifyMsg, opts ...grpc.CallOption) (*RingStatus, error) {
+func (c *syndicateClient) ModNode(ctx context.Context, in *ModifyMsg, opts ...grpc.CallOption) (*RingStatus, error) {
 	out := new(RingStatus)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/ModNode", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/ModNode", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) SetConf(ctx context.Context, in *Conf, opts ...grpc.CallOption) (*RingStatus, error) {
+func (c *syndicateClient) SetConf(ctx context.Context, in *Conf, opts ...grpc.CallOption) (*RingStatus, error) {
 	out := new(RingStatus)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/SetConf", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SetConf", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) SetActive(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+func (c *syndicateClient) SetActive(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
 	out := new(RingStatus)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/SetActive", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SetActive", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) GetVersion(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingStatus, error) {
+func (c *syndicateClient) GetVersion(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingStatus, error) {
 	out := new(RingStatus)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/GetVersion", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetVersion", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) GetGlobalConfig(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingConf, error) {
+func (c *syndicateClient) GetGlobalConfig(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingConf, error) {
 	out := new(RingConf)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/GetGlobalConfig", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetGlobalConfig", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) GetNodeConfig(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingConf, error) {
+func (c *syndicateClient) GetNodeConfig(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingConf, error) {
 	out := new(RingConf)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/GetNodeConfig", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetNodeConfig", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) SearchNodes(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SearchResult, error) {
+func (c *syndicateClient) SearchNodes(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SearchResult, error) {
 	out := new(SearchResult)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/SearchNodes", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SearchNodes", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) GetRing(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*Ring, error) {
+func (c *syndicateClient) GetRing(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*Ring, error) {
 	out := new(Ring)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/GetRing", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetRing", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ringMgrClient) RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error) {
+func (c *syndicateClient) RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error) {
 	out := new(NodeConfig)
-	err := grpc.Invoke(ctx, "/proto.RingMgr/RegisterNode", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/RegisterNode", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for RingMgr service
+// Server API for Syndicate service
 
-type RingMgrServer interface {
+type SyndicateServer interface {
 	AddNode(context.Context, *Node) (*RingStatus, error)
 	RemoveNode(context.Context, *Node) (*RingStatus, error)
 	ModNode(context.Context, *ModifyMsg) (*RingStatus, error)
@@ -482,189 +499,189 @@ type RingMgrServer interface {
 	RegisterNode(context.Context, *RegisterRequest) (*NodeConfig, error)
 }
 
-func RegisterRingMgrServer(s *grpc.Server, srv RingMgrServer) {
-	s.RegisterService(&_RingMgr_serviceDesc, srv)
+func RegisterSyndicateServer(s *grpc.Server, srv SyndicateServer) {
+	s.RegisterService(&_Syndicate_serviceDesc, srv)
 }
 
-func _RingMgr_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).AddNode(ctx, in)
+	out, err := srv.(SyndicateServer).AddNode(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_RemoveNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_RemoveNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).RemoveNode(ctx, in)
+	out, err := srv.(SyndicateServer).RemoveNode(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_ModNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_ModNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(ModifyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).ModNode(ctx, in)
+	out, err := srv.(SyndicateServer).ModNode(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_SetConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_SetConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Conf)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).SetConf(ctx, in)
+	out, err := srv.(SyndicateServer).SetConf(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_SetActive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_SetActive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).SetActive(ctx, in)
+	out, err := srv.(SyndicateServer).SetActive(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).GetVersion(ctx, in)
+	out, err := srv.(SyndicateServer).GetVersion(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).GetGlobalConfig(ctx, in)
+	out, err := srv.(SyndicateServer).GetGlobalConfig(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_GetNodeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_GetNodeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).GetNodeConfig(ctx, in)
+	out, err := srv.(SyndicateServer).GetNodeConfig(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_SearchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_SearchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(Node)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).SearchNodes(ctx, in)
+	out, err := srv.(SyndicateServer).SearchNodes(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_GetRing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_GetRing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).GetRing(ctx, in)
+	out, err := srv.(SyndicateServer).GetRing(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _RingMgr_RegisterNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Syndicate_RegisterNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RingMgrServer).RegisterNode(ctx, in)
+	out, err := srv.(SyndicateServer).RegisterNode(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-var _RingMgr_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.RingMgr",
-	HandlerType: (*RingMgrServer)(nil),
+var _Syndicate_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.Syndicate",
+	HandlerType: (*SyndicateServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "AddNode",
-			Handler:    _RingMgr_AddNode_Handler,
+			Handler:    _Syndicate_AddNode_Handler,
 		},
 		{
 			MethodName: "RemoveNode",
-			Handler:    _RingMgr_RemoveNode_Handler,
+			Handler:    _Syndicate_RemoveNode_Handler,
 		},
 		{
 			MethodName: "ModNode",
-			Handler:    _RingMgr_ModNode_Handler,
+			Handler:    _Syndicate_ModNode_Handler,
 		},
 		{
 			MethodName: "SetConf",
-			Handler:    _RingMgr_SetConf_Handler,
+			Handler:    _Syndicate_SetConf_Handler,
 		},
 		{
 			MethodName: "SetActive",
-			Handler:    _RingMgr_SetActive_Handler,
+			Handler:    _Syndicate_SetActive_Handler,
 		},
 		{
 			MethodName: "GetVersion",
-			Handler:    _RingMgr_GetVersion_Handler,
+			Handler:    _Syndicate_GetVersion_Handler,
 		},
 		{
 			MethodName: "GetGlobalConfig",
-			Handler:    _RingMgr_GetGlobalConfig_Handler,
+			Handler:    _Syndicate_GetGlobalConfig_Handler,
 		},
 		{
 			MethodName: "GetNodeConfig",
-			Handler:    _RingMgr_GetNodeConfig_Handler,
+			Handler:    _Syndicate_GetNodeConfig_Handler,
 		},
 		{
 			MethodName: "SearchNodes",
-			Handler:    _RingMgr_SearchNodes_Handler,
+			Handler:    _Syndicate_SearchNodes_Handler,
 		},
 		{
 			MethodName: "GetRing",
-			Handler:    _RingMgr_GetRing_Handler,
+			Handler:    _Syndicate_GetRing_Handler,
 		},
 		{
 			MethodName: "RegisterNode",
-			Handler:    _RingMgr_RegisterNode_Handler,
+			Handler:    _Syndicate_RegisterNode_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},

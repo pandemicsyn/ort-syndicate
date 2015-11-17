@@ -37,7 +37,7 @@ message StatusMsg {
     string master = 4;
 }
 
-service RingMgr {
+service Syndicate {
     rpc AddNode(Node) returns (RingStatus) {}
     rpc RemoveNode(Node) returns (RingStatus) {}
     rpc ModNode(ModifyMsg) returns (RingStatus) {}
