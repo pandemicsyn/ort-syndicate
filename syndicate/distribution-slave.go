@@ -41,7 +41,7 @@ func (s *ringslave) Store(c context.Context, r *pb.RingMsg) (*pb.StoreResult, er
 	}
 	s.version = r.Version
 
-	_, builder, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.oort.builder.gz", r.Version)))
+	_, builder, err := ring.RingOrBuilder(path.Join(s.spath, fmt.Sprintf("%d.oort.builder", r.Version)))
 	if err != nil || builder == nil {
 		return &pb.StoreResult{
 			Version: r.Version,

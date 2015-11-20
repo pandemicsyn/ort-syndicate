@@ -173,10 +173,10 @@ type ringChange struct {
 }
 
 func (s *Server) applyRingChange(c *ringChange) error {
-	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-oort.builder", s.cfg.RingDir, c.v)); err != nil {
+	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-%s.builder", s.cfg.RingDir, c.v, s.servicename)); err != nil {
 		return err
 	}
-	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%d-oort.ring", s.cfg.RingDir, c.v)); err != nil {
+	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%d-%s.ring", s.cfg.RingDir, c.v, s.servicename)); err != nil {
 		return err
 	}
 	newRB, newBB, err := s.loadRingBuilderBytes(c.v)
@@ -187,12 +187,12 @@ func (s *Server) applyRingChange(c *ringChange) error {
 	if err != nil {
 		return fmt.Errorf("Ring replicate failed: %s", err)
 	}
-	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/oort.builder", s.cfg.RingDir)); err != nil {
-		log.Println("Unable to persist oort.builder!")
+	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename)); err != nil {
+		log.Println("Unable to persist builder!")
 		return err
 	}
-	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/oort.ring", s.cfg.RingDir)); err != nil {
-		log.Println("Unable to persist oort.ring!")
+	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%s.ring", s.cfg.RingDir, s.servicename)); err != nil {
+		log.Println("Unable to persist ring!")
 		return err
 	}
 	s.rb = newRB
@@ -208,7 +208,7 @@ func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) 
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got AddNode request")
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -243,7 +243,7 @@ func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, erro
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got RemoveNode request for:", n.Id)
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -272,7 +272,7 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got SetConf request")
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -434,7 +434,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	s.Lock()
 	defer s.Unlock()
 	log.Printf("Got Register request: %#v", r)
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/oort.builder", s.cfg.RingDir))
+	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.NodeConfig{}, err
