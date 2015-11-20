@@ -1,10 +1,11 @@
-package main
+package syndicate
 
 import (
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -18,10 +19,45 @@ const (
 	_SYN_REGISTER_TIMEOUT  = 4
 	_SYN_DIAL_TIMEOUT      = 2
 	_SYN_DEFAULT_NODE_PORT = 8001
+	DefaultPort            = 8443
+	DefaultCmdCtrlPort     = 4443
+	DefaultRingDir         = "/etc/oort/ring"
+	DefaultCertFile        = "/etc/oort/server.crt"
+	DefaultCertKey         = "/etc/oort/server.key"
 )
 
-type ringmgr struct {
+var (
+	DefaultNetFilter  = []string{"10.0.0.0/8", "192.168.0.0/16"} //need to pull from conf
+	DefaultTierFilter = []string{"z.*"}
+)
+
+type Config struct {
+	Master           bool
+	Slaves           []string
+	NetFilter        []string
+	TierFilter       []string
+	Port             int
+	CmdCtrlPort      int
+	RingDir          string
+	CertFile         string
+	KeyFile          string
+	WeightAssignment string
+}
+
+func parseSlaveAddrs(slaveAddrs []string) []*RingSlave {
+	slaves := make([]*RingSlave, len(slaveAddrs))
+	for i, v := range slaveAddrs {
+		slaves[i] = &RingSlave{
+			status: false,
+			addr:   v,
+		}
+	}
+	return slaves
+}
+
+type Server struct {
 	sync.RWMutex
+	servicename  string
 	cfg          *Config
 	r            ring.Ring
 	b            *ring.Builder
@@ -35,12 +71,95 @@ type ringmgr struct {
 	changeChan   chan *changeMsg
 }
 
-func (s *ringmgr) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-oort.builder", s.cfg.RingDir, version))
+func NewServer(cfg *Config, servicename string) (*Server, error) {
+	var err error
+	s := new(Server)
+	s.cfg = cfg
+	s.servicename = servicename
+	s.parseConfig()
+
+	bfile, rfile, err := getRingPaths(cfg, s.servicename)
+	if err != nil {
+		panic(err)
+	}
+	_, s.b, err = ring.RingOrBuilder(bfile)
+	FatalIf(err, fmt.Sprintf("Builder file (%s) load failed:", bfile))
+	s.r, _, err = ring.RingOrBuilder(rfile)
+	FatalIf(err, fmt.Sprintf("Ring file (%s) load failed:", rfile))
+	log.Println("Ring version is:", s.r.Version())
+	//TODO: verify ring version in bytes matches what we expect
+	s.rb, s.bb, err = s.loadRingBuilderBytes(s.r.Version())
+	FatalIf(err, "Attempting to load ring/builder bytes")
+
+	for _, v := range cfg.NetFilter {
+		_, n, err := net.ParseCIDR(v)
+		if err != nil {
+			FatalIf(err, "Invalid network range provided")
+		}
+		s.netlimits = append(s.netlimits, n)
+	}
+	s.tierlimits = cfg.TierFilter
+	s.managedNodes = bootstrapManagedNodes(s.r)
+	s.changeChan = make(chan *changeMsg, 1)
+	go s.RingChangeManager()
+	s.slaves = parseSlaveAddrs(cfg.Slaves)
+	if len(s.slaves) == 0 {
+		log.Println("!! Running without slaves, have no one to register !!")
+		return s, nil
+	}
+
+	failcount := 0
+	for _, slave := range s.slaves {
+		if err = s.RegisterSlave(slave); err != nil {
+			log.Println("Got error:", err)
+			failcount++
+		}
+	}
+	if failcount > (len(s.slaves) / 2) {
+		log.Fatalln("More than half of the ring slaves failed to respond. Exiting.")
+	}
+	return s, nil
+}
+
+func (s *Server) parseConfig() {
+	if s.cfg.NetFilter == nil {
+		s.cfg.NetFilter = DefaultNetFilter
+		log.Println("Config didn't specify netfilter, using default:", DefaultNetFilter)
+	}
+	if s.cfg.TierFilter == nil {
+		s.cfg.TierFilter = DefaultTierFilter
+		log.Println("Config didn't specify netfilter, using default:", DefaultTierFilter)
+	}
+
+	if s.cfg.Port == 0 {
+		log.Println("Config didn't specify port, using default:", DefaultPort)
+		s.cfg.Port = DefaultPort
+	}
+	if s.cfg.CmdCtrlPort == 0 {
+		log.Println("Config didn't specify cmdctrl port, using default:", DefaultCmdCtrlPort)
+		s.cfg.Port = DefaultCmdCtrlPort
+	}
+	if s.cfg.RingDir == "" {
+		s.cfg.RingDir = filepath.Join(DefaultRingDir, s.servicename)
+		log.Println("Config didn't specify ringdir, using default:", s.cfg.RingDir)
+
+	}
+	if s.cfg.CertFile == "" {
+		log.Println("Config didn't specify certfile, using default:", DefaultCertFile)
+		s.cfg.CertFile = DefaultCertFile
+	}
+	if s.cfg.KeyFile == "" {
+		log.Println("Config didn't specify keyfile, using default:", DefaultCertKey)
+		s.cfg.KeyFile = DefaultCertKey
+	}
+}
+
+func (s *Server) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-%s.builder", s.cfg.RingDir, version, s.servicename))
 	if err != nil {
 		return ring, builder, err
 	}
-	r, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-oort.ring", s.cfg.RingDir, version))
+	r, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-%s.ring", s.cfg.RingDir, version, s.servicename))
 	if err != nil {
 		return ring, builder, err
 	}
@@ -53,7 +172,7 @@ type ringChange struct {
 	v int64
 }
 
-func (s *ringmgr) applyRingChange(c *ringChange) error {
+func (s *Server) applyRingChange(c *ringChange) error {
 	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-oort.builder", s.cfg.RingDir, c.v)); err != nil {
 		return err
 	}
@@ -85,7 +204,7 @@ func (s *ringmgr) applyRingChange(c *ringChange) error {
 }
 
 // TODO: Need field/value error checks
-func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) {
+func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got AddNode request")
@@ -120,7 +239,7 @@ func (s *ringmgr) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error)
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
-func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
+func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got RemoveNode request for:", n.Id)
@@ -145,11 +264,11 @@ func (s *ringmgr) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, err
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
-func (s *ringmgr) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, error) {
+func (s *Server) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, error) {
 	return &pb.RingStatus{}, nil
 }
 
-func (s *ringmgr) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, error) {
+func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got SetConf request")
@@ -169,19 +288,19 @@ func (s *ringmgr) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, err
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
-func (s *ringmgr) SetActive(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
+func (s *Server) SetActive(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
-func (s *ringmgr) GetVersion(c context.Context, n *pb.EmptyMsg) (*pb.RingStatus, error) {
+func (s *Server) GetVersion(c context.Context, n *pb.EmptyMsg) (*pb.RingStatus, error) {
 	s.RLock()
 	defer s.RUnlock()
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
-func (s *ringmgr) GetGlobalConfig(c context.Context, n *pb.EmptyMsg) (*pb.RingConf, error) {
+func (s *Server) GetGlobalConfig(c context.Context, n *pb.EmptyMsg) (*pb.RingConf, error) {
 	s.RLock()
 	defer s.RUnlock()
 	config := &pb.RingConf{
@@ -191,7 +310,7 @@ func (s *ringmgr) GetGlobalConfig(c context.Context, n *pb.EmptyMsg) (*pb.RingCo
 	return config, nil
 }
 
-func (s *ringmgr) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, error) {
+func (s *Server) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, error) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -235,7 +354,7 @@ func (s *ringmgr) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, 
 	return &pb.SearchResult{Nodes: res}, nil
 }
 
-func (s *ringmgr) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, error) {
+func (s *Server) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, error) {
 	s.RLock()
 	defer s.RUnlock()
 	node := s.r.Node(n.Id)
@@ -250,7 +369,7 @@ func (s *ringmgr) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, er
 	return config, nil
 }
 
-func (s *ringmgr) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
+func (s *Server) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
 	s.RLock()
 	defer s.RUnlock()
 	return &pb.Ring{Ring: *s.rb}, nil
@@ -258,7 +377,7 @@ func (s *ringmgr) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
 
 // validNodeIP verifies that the provided ip is not a loopback or multicast address
 // and checks whether the ip is in the configured network limits range.
-func (s *ringmgr) validNodeIP(i net.IP) bool {
+func (s *Server) validNodeIP(i net.IP) bool {
 	switch {
 	case i.IsLoopback():
 		return false
@@ -275,7 +394,7 @@ func (s *ringmgr) validNodeIP(i net.IP) bool {
 }
 
 // tier0 must never already exist as a tier0 entry in the ring
-func (s *ringmgr) validTiers(t []string) bool {
+func (s *Server) validTiers(t []string) bool {
 	if len(t) == 0 {
 		return false
 	}
@@ -284,6 +403,7 @@ func (s *ringmgr) validTiers(t []string) bool {
 		return false
 	}
 	/*
+		//we're not using multiple tiers anymore
 		for i := 1; i <= len(t); i++ {
 			for _, v := range s.tierlimits {
 				matched, err := regexp.MatchString(v, t[i])
@@ -301,7 +421,7 @@ func (s *ringmgr) validTiers(t []string) bool {
 
 // nodeInRing just checks to see if the hostname or addresses appear
 // in any existing entries meta or address fields.
-func (s *ringmgr) nodeInRing(hostname string, addrs []string) bool {
+func (s *Server) nodeInRing(hostname string, addrs []string) bool {
 	a := strings.Join(addrs, "|")
 	r, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", hostname), fmt.Sprintf("address~=%s", a)})
 	if len(r) != 0 {
@@ -310,7 +430,7 @@ func (s *ringmgr) nodeInRing(hostname string, addrs []string) bool {
 	return false
 }
 
-func (s *ringmgr) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.NodeConfig, error) {
+func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.NodeConfig, error) {
 	s.Lock()
 	defer s.Unlock()
 	log.Printf("Got Register request: %#v", r)
