@@ -441,7 +441,6 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	}
 
 	var addrs []string
-
 	for _, v := range r.Addrs {
 		i, _, err := net.ParseCIDR(v)
 		if err != nil {
@@ -469,7 +468,13 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		return &pb.NodeConfig{}, fmt.Errorf("Invalid tiers provided")
 	}
 
-	n, err := b.AddNode(true, 1000, r.Tiers, addrs, fmt.Sprintf("%s|%s", r.Hostname, r.Hardwareid), []byte(""))
+	var weight uint32
+	nodeEnabled := false
+	if s.cfg.WeightAssignment == "fixed" {
+		weight = 1000
+		nodeEnabled = true
+	}
+	n, err := b.AddNode(nodeEnabled, weight, r.Tiers, addrs, fmt.Sprintf("%s|%s", r.Hostname, r.Hardwareid), []byte(""))
 	if err != nil {
 		return &pb.NodeConfig{}, err
 	}

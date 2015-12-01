@@ -33,7 +33,7 @@ func getRingPaths(cfg *Config, servicename string) (lastBuilder string, lastRing
 	if err != nil {
 		//TODO: no active builder found, so should we search for the most recent one
 		//we can find and load it and hopefully its matching ring?
-		return "", "", fmt.Errorf("No builder file found in %s", cfg.RingDir)
+		return "", "", fmt.Errorf("No builder file found in %s, looking for: %s", cfg.RingDir, bstring)
 	}
 	lastBuilder = bstring
 
@@ -41,7 +41,7 @@ func getRingPaths(cfg *Config, servicename string) (lastBuilder string, lastRing
 	if err != nil {
 		//TODO: if we don't find a matching oort.ring should we just
 		// use oort.builder to make new one ?
-		return "", "", fmt.Errorf("No ring file found in %s", cfg.RingDir)
+		return "", "", fmt.Errorf("No ring file found in %s, looking for: %s", cfg.RingDir, rstring)
 	}
 	lastRing = rstring
 	return lastBuilder, lastRing, nil

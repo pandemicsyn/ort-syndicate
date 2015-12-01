@@ -5,7 +5,13 @@ KeyFile = "/etc/oort/server.key"
 UseTLS = true
 Enabled = true
 
-[ValueStoreConfig]
+[OortGroupStoreConfig]
+ListenAddress = "0.0.0.0:6379"
+MaxClients = 8192
+Profile = false
+Debug = false
+
+[GroupStoreConfig]
 CompactionInterval = 42
 ValueCap = 4194302
 

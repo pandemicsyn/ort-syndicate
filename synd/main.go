@@ -56,7 +56,6 @@ func launchSyndicates(rs *RingSyndicates) {
 	defer rs.Unlock()
 	for k, _ := range rs.Syndics {
 		rs.Syndics[k].Lock()
-
 		l, err := net.Listen("tcp", fmt.Sprintf(":%d", rs.Syndics[k].config.Port))
 		if err != nil {
 			log.Fatalln(err)
@@ -74,7 +73,6 @@ func launchSyndicates(rs *RingSyndicates) {
 			pb.RegisterSyndicateServer(s, rs.Syndics[k].server)
 			log.Println("Master starting up on", rs.Syndics[k].config.Port)
 			s.Serve(l)
-
 		} else {
 			//pb.RegisterRingDistServer(s, newRingDistServer())
 			//log.Printf("Starting ring slave up on %d...\n", cfg.Port)
@@ -105,9 +103,9 @@ func main() {
 	if _, err := toml.DecodeFile(configFile, &tc); err != nil {
 		log.Fatalln(err)
 	}
-	rs.Syndics = make([]*RingSyndicate, len(tc))
-
 	for k, v := range tc {
+		log.Println("Found config for", k)
+		log.Println("Config:", v)
 		syndic := &RingSyndicate{
 			active: false,
 			name:   k,
@@ -119,4 +117,5 @@ func main() {
 		}
 		rs.Syndics = append(rs.Syndics, syndic)
 	}
+	launchSyndicates(rs)
 }

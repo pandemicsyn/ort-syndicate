@@ -48,10 +48,14 @@ run:
 ring:
 	go get github.com/gholt/ring/ring
 	go install github.com/gholt/ring/ring
-	mkdir -p /etc/oort/ring
-	ring /etc/oort/ring/oort.builder create replicas=3
-	ring /etc/oort/ring/oort.builder add active=true capacity=1000 tier0=removeme 
-	ring /etc/oort/ring/oort.builder ring
+	mkdir -p /etc/oort/ring/value
+	mkdir -p /etc/oort/ring/group
+	ring /etc/oort/ring/value/valuestore.builder create replicas=3
+	ring /etc/oort/ring/value/valuestore.builder add active=true capacity=1000 tier0=removeme 
+	ring /etc/oort/ring/value/valuestore.builder ring
+	ring /etc/oort/ring/group/groupstore.builder create replicas=3
+	ring /etc/oort/ring/group/groupstore.builder add active=true capacity=1000 tier0=removeme 
+	ring /etc/oort/ring/group/groupstore.builder ring
 
 packages: clean build deb
 

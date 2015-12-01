@@ -1,5 +1,30 @@
-master = "true"
-ringdir = "/etc/oort/ring"
-certfile = "/etc/oort/server.crt"
-keyfile = "/etc/oort/server.key"
-tls = "true"
+[valuestore]
+Master = true
+Salves = ["1.1.1.1", "2.2.2.2"]
+NetFilter = ["10.10.10.1/28"]
+TierFilter = ["tier.*"]
+Port = 8443
+CmdCtrlPort = 4443
+CertFile = "/etc/oort/server.crt"
+KeyFile = "/etc/oort/server.key"
+RingDir = "/etc/oort/ring/value"
+WeightAssignment = "manual"
+
+[groupstore]
+Master = true
+Salves = ["1.1.1.1", "2.2.2.2"]
+NetFilter = ["10.10.10.1/28"]
+TierFilter = ["tier.*"]
+Port = 8444
+CmdCtrlPort = 4444
+CertFile = "/etc/oort/server.crt"
+KeyFile = "/etc/oort/server.key"
+RingDir = "/etc/oort/ring/group"
+WeightAssignment = "self"
+
+#[llamasherpaderpa2000]
+#Master = true
+#Slaves = []
+#NetFilter = ["192.168.1.1/27"]
+#Port = 8445
+#CmdCtrlPort = 4445
