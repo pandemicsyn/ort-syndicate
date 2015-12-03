@@ -133,6 +133,9 @@ cp -av packaging/root/usr/share/oort/systemd/oort-groupd.service /lib/systemd/sy
 echo "OORT_GROUP_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oort-groupd
 systemctl daemon-reload
 
+echo "Creating data dir"
+mkdir -v -p /data
+
 # setup formic & cfs deps
 go get github.com/creiht/formic/formicd
 go install github.com/creiht/formic/formicd
