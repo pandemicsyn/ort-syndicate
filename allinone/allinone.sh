@@ -74,7 +74,7 @@ cd oort
 git remote add upstream git@github.com:pandemicsyn/oort.git
 
 echo "Setting up formic/cfs repos"
-mkdir -o $GOPATH/src/github.com/creiht
+mkdir -p $GOPATH/src/github.com/creiht
 cd $GOPATH/src/github.com/creiht
 git clone git@github.com:$GIT_USER/formic.git
 cd formic
@@ -146,4 +146,6 @@ echo
 echo "To start services run:"
 echo "systemctl start synd"
 echo "systemctl start oort-valued"
+echo ""
+echo "If you plan on using *THIS* session make sure to source ~/.bashrc to load path changes"
 
