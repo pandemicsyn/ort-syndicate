@@ -1,8 +1,6 @@
 [valuestore]
 Master = true
-Salves = ["1.1.1.1", "2.2.2.2"]
-NetFilter = ["10.10.10.1/28"]
-TierFilter = ["tier.*"]
+NetFilter = ["10.0.0.0/8"]
 Port = 8443
 CmdCtrlPort = 4443
 CertFile = "/etc/oort/server.crt"
@@ -12,9 +10,7 @@ WeightAssignment = "manual"
 
 [groupstore]
 Master = true
-Salves = ["1.1.1.1", "2.2.2.2"]
-NetFilter = ["10.10.10.1/28"]
-TierFilter = ["tier.*"]
+NetFilter = ["10.0.0.0/8"]
 Port = 8444
 CmdCtrlPort = 4444
 CertFile = "/etc/oort/server.crt"
