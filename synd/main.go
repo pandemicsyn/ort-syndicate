@@ -131,7 +131,7 @@ func main() {
 			name:   k,
 			config: v,
 		}
-		syndic.server, err = syndicate.NewServer(&v, k)
+		syndic.server, err = syndicate.NewServer(&syndic.config, k)
 		if err != nil {
 			log.Fatalln(err)
 		}

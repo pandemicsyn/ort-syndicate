@@ -139,7 +139,8 @@ go install github.com/creiht/formic/formicd
 go get github.com/creiht/formic/cfs
 go install github.com/creiht/formic/cfs
 
+echo 
 echo "To start services run:"
 echo "systemctl start synd"
-echo "systemctl start oortd"
+echo "systemctl start oort-valued"
 
