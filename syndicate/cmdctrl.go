@@ -1,4 +1,4 @@
-package main
+package syndicate
 
 import (
 	"crypto/tls"
@@ -191,7 +191,7 @@ type changeMsg struct {
 
 // NotifyNodes is called when a ring change occur's and just
 // drops a change message on the changeChan for the RingChangeManager.
-func (s *ringmgr) NotifyNodes() {
+func (s *Server) NotifyNodes() {
 	s.RLock()
 	m := &changeMsg{
 		rb: s.rb,
@@ -201,7 +201,7 @@ func (s *ringmgr) NotifyNodes() {
 	s.changeChan <- m
 }
 
-func (s *ringmgr) RingChangeManager() {
+func (s *Server) RingChangeManager() {
 	for msg := range s.changeChan {
 		s.RLock()
 		for k, _ := range s.managedNodes {
@@ -225,7 +225,7 @@ func (s *ringmgr) RingChangeManager() {
 }
 
 // TODO: if disconnect encounters an error we just log it and remove the node anyway
-func (s *ringmgr) removeManagedNode(nodeid uint64) {
+func (s *Server) removeManagedNode(nodeid uint64) {
 	s.RLock()
 	if node, ok := s.managedNodes[nodeid]; ok {
 		node.Lock()
@@ -246,7 +246,7 @@ func (s *ringmgr) removeManagedNode(nodeid uint64) {
 }
 
 // TODO: remove me, test func
-func (s *ringmgr) pingSweep() {
+func (s *Server) pingSweep() {
 	responses := make(map[string]string, len(s.managedNodes))
 	for k, _ := range s.managedNodes {
 		_, msg, err := s.managedNodes[k].Ping()

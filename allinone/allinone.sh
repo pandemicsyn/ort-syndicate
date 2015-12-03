@@ -56,25 +56,24 @@ else
 fi
 
 echo "Setting up the imporant bits..."
-
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
 go get github.com/golang/protobuf/protoc-gen-go
 
-# get syndicate and setup repos
+echo "Setting up syndicate repo"
 mkdir -p $GOPATH/src/github.com/pandemicsyn
 cd $GOPATH/src/github.com/pandemicsyn/
 git clone git@github.com:$GIT_USER/syndicate.git
 cd syndicate
 git remote add upstream git@github.com:pandemicsyn/syndicate.git
 
-# get oort and setup repos
+echo "Setting up oort repos"
 cd $GOPATH/src/github.com/pandemicsyn
 git clone git@github.com:$GIT_USER/oort.git
 cd oort
 git remote add upstream git@github.com:pandemicsyn/oort.git
 
-# get formic/cfs and setup repos
+echo "Setting up formic/cfs repos"
 mkdir -o $GOPATH/src/github.com/creiht
 cd $GOPATH/src/github.com/creiht
 git clone git@github.com:$GIT_USER/formic.git
@@ -82,31 +81,56 @@ cd formic
 git remote add upstream git@github.com:creiht/formic.git
 
 
-# install syndicate and ort
+echo "Prepping /etc"
 cd $GOPATH/src/github.com/pandemicsyn/syndicate
 mkdir -p /etc/oort/ring
-mkdir -p /etc/oort/oortd
+mkdir -p /etc/oort/value /etc/oort/group
 cp -av allinone/etc/oort/* /etc/oort
+
+echo "Install go deps"
 make deps
 go install github.com/gholt/ring/ring
-ring /etc/oort/ring/oort.builder create replicas=1 configfile=/etc/oort/oort.toml
-ring /etc/oort/ring/oort.builder add active=true capacity=1000 tier0=removeme
-ring /etc/oort/ring/oort.builder ring
 go get github.com/pandemicsyn/ringver
 go install github.com/pandemicsyn/ringver
-RINGVER=`ringver /etc/oort/ring/oort.ring`
-cp -av /etc/oort/ring/oort.ring /etc/oort/ring/$RINGVER-oort.ring
-cp -av /etc/oort/ring/oort.builder /etc/oort/ring/$RINGVER-oort.builder
+
+echo "Setting up valuestore rings"
+mkdir -p /etc/oort/ring/value
+ring /etc/oort/ring/value/valuestore.builder create replicas=1 configfile=/etc/oort/valuestore.toml
+ring /etc/oort/ring/value/valuestore.builder add active=true capacity=1000 tier0=removeme
+ring /etc/oort/ring/value/valuestore.builder ring
+RINGVER=`ringver /etc/oort/ring/value/valuestore.ring`
+cp -av /etc/oort/ring/value/valuestore.ring /etc/oort/ring/value/$RINGVER-valuestore.ring
+cp -av /etc/oort/ring/value/valuestore.builder /etc/oort/ring/value/$RINGVER-valuestore.builder
+
+echo "Setting up groupstore rings"
+mkdir -p /etc/oort/ring/group
+ring /etc/oort/ring/group/groupstore.builder create replicas=1 configfile=/etc/oort/groupstore.toml
+ring /etc/oort/ring/group/groupstore.builder add active=true capacity=1000 tier0=removeme
+ring /etc/oort/ring/group/groupstore.builder ring
+RINGVER=`ringver /etc/oort/ring/group/groupstore.ring`
+cp -av /etc/oort/ring/group/groupstore.ring /etc/oort/ring/group/$RINGVER-groupstore.ring
+cp -av /etc/oort/ring/group/groupstore.builder /etc/oort/ring/group/$RINGVER-groupstore.builder
+
+echo "Installing synd"
 cp -av packaging/root/usr/share/syndicate/systemd/synd.service /lib/systemd/system 
 go get github.com/pandemicsyn/syndicate/synd
 make install
 systemctl daemon-reload
 
-go get github.com/pandemicsyn/oort/oortd
-go install github.com/pandemicsyn/oort/oortd
+echo "Installing oort-valued"
+go get github.com/pandemicsyn/oort/oort-valued
+go install github.com/pandemicsyn/oort/oort-valued
 cd $GOPATH/src/github.com/pandemicsyn/oort
-cp -av packaging/root/usr/share/oort/systemd/oortd.service /lib/systemd/system 
-echo "OORT_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oortd
+cp -av packaging/root/usr/share/oort/systemd/oort-valued.service /lib/systemd/system 
+echo "OORT_VALUE_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oort-valued
+systemctl daemon-reload
+
+echo "Installing oort-groupd"
+go get github.com/pandemicsyn/oort/oort-groupd
+go install github.com/pandemicsyn/oort/oort-groupd
+cd $GOPATH/src/github.com/pandemicsyn/oort
+cp -av packaging/root/usr/share/oort/systemd/oort-groupd.service /lib/systemd/system 
+echo "OORT_GROUP_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oort-groupd
 systemctl daemon-reload
 
 # setup formic & cfs deps

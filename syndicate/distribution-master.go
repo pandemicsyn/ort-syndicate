@@ -1,4 +1,4 @@
-package main
+package syndicate
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ type RingSlave struct {
 	client  pb.RingDistClient
 }
 
-func (s *ringmgr) RegisterSlave(slave *RingSlave) error {
+func (s *Server) RegisterSlave(slave *RingSlave) error {
 	log.Printf("--> Attempting to register: %+v", slave)
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithBlock())
@@ -64,7 +64,7 @@ func (s *ringmgr) RegisterSlave(slave *RingSlave) error {
 //TODO: Need concurrency, we should just fire of replicates in goroutines
 // and collects the results. On a failure we still need to send the rollback
 // or have the slave's commit deadline trigger.
-func (s *ringmgr) replicateRing(r ring.Ring, rb, bb *[]byte) error {
+func (s *Server) replicateRing(r ring.Ring, rb, bb *[]byte) error {
 	failcount := 0
 	for _, slave := range s.slaves {
 		ctx, _ := context.WithTimeout(context.Background(), time.Duration(_SYN_REGISTER_TIMEOUT)*time.Second)
