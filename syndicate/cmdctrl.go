@@ -79,29 +79,29 @@ func NewManagedNode(address string) (*ManagedNode, error) {
 
 // Take direct from grpc.Conn.WaitForStateChange:
 // WaitForStateChange blocks until the state changes to something other than the sourceState
-// or timeout fires. The grpc instance returns false if timeout fires and true otherwise. Our
-// instance returns false if timeout fires OR if n.conn is nil, and true otherwise. I assume
-// we'll wanna use this do things like update synd state when a node comes online after a
-// failure or something.
-func (n *ManagedNode) ConnWaitForStateChange(timeout time.Duration, sourceState grpc.ConnectivityState) bool {
+// or timeout fires. The grpc instance returns error if timeout fires or new ConnectivityState otherwise.
+// Our instance returns if timeout fires or state changes OR returns state is Shutdown if n.conn is nil!
+// I assume we'll wanna use this do things like update synd state when a node comes online after a failure
+// or something.
+func (n *ManagedNode) ConnWaitForStateChange(ctx context.Context, timeout time.Duration, sourceState grpc.ConnectivityState) (grpc.ConnectivityState, error) {
 	n.Lock()
 	defer n.Unlock()
 	if n.conn != nil {
-		return n.conn.WaitForStateChange(timeout, sourceState)
+		return n.conn.WaitForStateChange(ctx, sourceState)
 	}
-	return false
+	return grpc.Shutdown, nil
 }
 
 // ConnState returns the state of the underlying grpc connection.
 // See https://godoc.org/google.golang.org/grpc#ConnectivityState for possible states.
 // Returns -1 if n.conn is nil
-func (n *ManagedNode) ConnState() grpc.ConnectivityState {
+func (n *ManagedNode) ConnState() (grpc.ConnectivityState, error) {
 	n.RLock()
 	defer n.RUnlock()
 	if n.conn != nil {
 		return n.conn.State()
 	}
-	return -1
+	return -1, nil
 }
 
 // Connect sets up a grpc connection for the node.
