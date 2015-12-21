@@ -83,6 +83,15 @@ func (m *HealthCheckMsg) Reset()         { *m = HealthCheckMsg{} }
 func (m *HealthCheckMsg) String() string { return proto.CompactTextString(m) }
 func (*HealthCheckMsg) ProtoMessage()    {}
 
+func init() {
+	proto.RegisterType((*RingUpdateResult)(nil), "cmdctrl.RingUpdateResult")
+	proto.RegisterType((*StatsMsg)(nil), "cmdctrl.StatsMsg")
+	proto.RegisterType((*EmptyMsg)(nil), "cmdctrl.EmptyMsg")
+	proto.RegisterType((*StatusMsg)(nil), "cmdctrl.StatusMsg")
+	proto.RegisterType((*Ring)(nil), "cmdctrl.Ring")
+	proto.RegisterType((*HealthCheckMsg)(nil), "cmdctrl.HealthCheckMsg")
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
