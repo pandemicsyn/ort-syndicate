@@ -28,7 +28,7 @@ const (
 
 var (
 	DefaultNetFilter  = []string{"10.0.0.0/8", "192.168.0.0/16"} //need to pull from conf
-	DefaultTierFilter = []string{"z.*"}
+	DefaultTierFilter = []string{".*"}
 )
 
 type Config struct {
@@ -128,7 +128,7 @@ func (s *Server) parseConfig() {
 	}
 	if s.cfg.TierFilter == nil {
 		s.cfg.TierFilter = DefaultTierFilter
-		log.Println("Config didn't specify netfilter, using default:", DefaultTierFilter)
+		log.Println("Config didn't specify tierfilter, using default:", DefaultTierFilter)
 	}
 
 	if s.cfg.Port == 0 {

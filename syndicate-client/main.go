@@ -124,78 +124,97 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := s.mainEntry(os.Args); err != nil {
+	fmt.Println(flag.Args())
+	if err := s.mainEntry(flag.Args()); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 }
 
 func (s *SyndClient) mainEntry(args []string) error {
-	if len(args) < 2 || (len(args) > 1 && args[1] == "help") {
+	if len(args) == 0 || args[0] == "help" {
 		return helpCmd()
 	}
-	switch args[1] {
+	switch args[0] {
 	case "start":
-		c, err := NewCmdCtrlClient(args[2])
+		if len(args) != 2 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
 		if err != nil {
 			return err
 		}
 		return c.startNodeCmd()
 	case "restart":
-		c, err := NewCmdCtrlClient(args[2])
+		if len(args) != 2 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
 		if err != nil {
 			return err
 		}
 		return c.restartNodeCmd()
 	case "stop":
-		c, err := NewCmdCtrlClient(args[2])
+		if len(args) != 2 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
 		if err != nil {
 			return err
 		}
 		return c.stopNodeCmd()
 	case "exit":
-		c, err := NewCmdCtrlClient(args[2])
+		if len(args) != 2 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
 		if err != nil {
 			return err
 		}
 		return c.exitNodeCmd()
 	case "stats":
-		c, err := NewCmdCtrlClient(args[2])
+		if len(args) != 2 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
 		if err != nil {
 			return err
 		}
 		return c.statsNodeCmd()
 	case "ringupdate":
-		c, err := NewCmdCtrlClient(args[2])
+		if len(args) != 3 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
 		if err != nil {
 			return err
 		}
-		return c.ringUpdateNodeCmd(args[3])
+		return c.ringUpdateNodeCmd(args[2])
 	case "version":
 		return s.printVersionCmd()
 	case "config":
-		if len(args) == 2 {
+		if len(args) == 1 {
 			return s.printConfigCmd()
 		}
-		if len(args) == 3 {
-			id, err := strconv.ParseUint(args[2], 10, 64)
+		if len(args) == 2 {
+			id, err := strconv.ParseUint(args[1], 10, 64)
 			if err != nil {
 				return err
 			}
 			return s.printNodeConfigCmd(id)
 		}
 	case "search":
-		return s.SearchNodes(args[2:])
+		return s.SearchNodes(args[1:])
 	case "rm":
 		if len(args) == 3 {
-			id, err := strconv.ParseUint(args[2], 10, 64)
+			id, err := strconv.ParseUint(args[1], 10, 64)
 			if err != nil {
 				return err
 			}
 			return s.rmNodeCmd(id)
 		}
 	case "set":
-		for _, arg := range args[2:] {
+		for _, arg := range args[1:] {
 			sarg := strings.SplitN(arg, "=", 2)
 			if len(sarg) != 2 {
 				return fmt.Errorf(`invalid expression %#v; needs "="`, arg)
