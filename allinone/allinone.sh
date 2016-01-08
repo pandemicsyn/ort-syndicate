@@ -141,11 +141,30 @@ go get github.com/creiht/formic/formicd
 go install github.com/creiht/formic/formicd
 go get github.com/creiht/formic/cfs
 go install github.com/creiht/formic/cfs
+cp -av go/src/github.com/creiht/formic/packaging/root/usr/share/formicd/systemd/formicd.service /lib/systemd/system
+echo 'FORMICD_PORT=8444' > /etc/default/formicd
+
+# Adding some helpful git stuff to the .bashrc 
+echo "" >> ~/.bashrc
+echo "# Added to show git branches" >> ~/.bashrc
+echo 'export PS1="\u@\h \W\[\033[37m\]\$(git_branch)\[\033[00m\] $ "' >> ~/.bashrc
+echo '' >> ~/.bashrc
+echo '# get the current git branch' >> ~/.bashrc
+echo 'git_branch() {' >> ~/.bashrc
+echo "        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'" >> ~/.bashrc
+echo '    }' >> ~/.bashrc
+
+
 
 echo 
 echo "To start services run:"
 echo "systemctl start synd"
 echo "systemctl start oort-valued"
+echo "systemctl start formicd"
 echo ""
-echo "If you plan on using *THIS* session make sure to source ~/.bashrc to load path changes"
+echo "For example: to create a cfsfuse mount point create the location and run cfs:"
+echo "mkdir -p /mnt/cfs"
+echo "cfs -host localhost:8445 /mnt/cfs"
+echo ""
+echo "If you plan on using *THIS* session and to get the git enhanced prompt make sure to source ~/.bashrc to load path changes"
 
