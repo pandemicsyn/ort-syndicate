@@ -141,7 +141,7 @@ go get github.com/creiht/formic/formicd
 go install github.com/creiht/formic/formicd
 go get github.com/creiht/formic/cfs
 go install github.com/creiht/formic/cfs
-cp -av go/src/github.com/creiht/formic/packaging/root/usr/share/formicd/systemd/formicd.service /lib/systemd/system
+cp -av $GOPATH/src/github.com/creiht/formic/packaging/root/usr/share/formicd/systemd/formicd.service /lib/systemd/system
 echo 'FORMICD_PORT=8444' > /etc/default/formicd
 
 # Adding some helpful git stuff to the .bashrc 
