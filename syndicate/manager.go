@@ -16,14 +16,14 @@ import (
 )
 
 const (
-	_SYN_REGISTER_TIMEOUT  = 4
-	_SYN_DIAL_TIMEOUT      = 2
-	_SYN_DEFAULT_NODE_PORT = 8001
-	DefaultPort            = 8443
-	DefaultCmdCtrlPort     = 4443
-	DefaultRingDir         = "/etc/oort/ring"
-	DefaultCertFile        = "/etc/oort/server.crt"
-	DefaultCertKey         = "/etc/oort/server.key"
+	_SYN_REGISTER_TIMEOUT = 4
+	_SYN_DIAL_TIMEOUT     = 2
+	DefaultPort           = 8443
+	DefaultCmdCtrlPort    = 4443
+	DefaultMsgRingPort    = 8001
+	DefaultRingDir        = "/etc/oort/ring"
+	DefaultCertFile       = "/etc/oort/server.crt"
+	DefaultCertKey        = "/etc/oort/server.key"
 )
 
 var (
@@ -37,6 +37,7 @@ type Config struct {
 	NetFilter        []string
 	TierFilter       []string
 	Port             int
+	MsgRingPort      int
 	CmdCtrlPort      int
 	RingDir          string
 	CertFile         string
@@ -134,6 +135,10 @@ func (s *Server) parseConfig() {
 	if s.cfg.Port == 0 {
 		log.Println("Config didn't specify port, using default:", DefaultPort)
 		s.cfg.Port = DefaultPort
+	}
+	if s.cfg.MsgRingPort == 0 {
+		log.Println("Config didn't specify ring port, using default:", DefaultPort)
+		s.cfg.MsgRingPort = DefaultMsgRingPort
 	}
 	if s.cfg.CmdCtrlPort == 0 {
 		log.Println("Config didn't specify cmdctrl port, using default:", DefaultCmdCtrlPort)
@@ -448,7 +453,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 			continue
 		}
 		if s.validNodeIP(i) {
-			addrs = append(addrs, fmt.Sprintf("%s:%d", i.String(), _SYN_DEFAULT_NODE_PORT))
+			addrs = append(addrs, fmt.Sprintf("%s:%d", i.String(), s.cfg.MsgRingPort))
 		}
 	}
 	switch {

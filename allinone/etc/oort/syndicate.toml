@@ -2,16 +2,18 @@
 Master = true
 NetFilter = ["10.0.0.0/8"]
 Port = 8443
+MsgRingPort = 8001
 CmdCtrlPort = 4443
 CertFile = "/etc/oort/server.crt"
 KeyFile = "/etc/oort/server.key"
 RingDir = "/etc/oort/ring/value"
-WeightAssignment = "manual"
+WeightAssignment = "self"
 
 [groupstore]
 Master = true
 NetFilter = ["10.0.0.0/8"]
 Port = 8444
+MsgRingPort = 8002
 CmdCtrlPort = 4444
 CertFile = "/etc/oort/server.crt"
 KeyFile = "/etc/oort/server.key"

@@ -3,3 +3,4 @@
 - wget https://raw.githubusercontent.com/pandemicsyn/syndicate/master/allinone/allinone.sh
 - GIT_USER=YOURGHUSRENAME bash allinone.sh
 - Optionally use GIT_USER=YOURGHUSERNAME BUILDPROTOBUF=yes bash allinone.sh to also build protobuf 3
+- You can also use the options FANCYVIM=yes and FANCYPROMPT=yes

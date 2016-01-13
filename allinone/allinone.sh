@@ -130,7 +130,7 @@ go get github.com/pandemicsyn/oort/oort-groupd
 go install github.com/pandemicsyn/oort/oort-groupd
 cd $GOPATH/src/github.com/pandemicsyn/oort
 cp -av packaging/root/usr/share/oort/systemd/oort-groupd.service /lib/systemd/system 
-echo "OORT_GROUP_SYNDICATE_OVERRIDE=127.0.0.1:8443" >> /etc/default/oort-groupd
+echo "OORT_GROUP_SYNDICATE_OVERRIDE=127.0.0.1:8444" >> /etc/default/oort-groupd
 systemctl daemon-reload
 
 echo "Creating data dir"
@@ -145,22 +145,23 @@ cp -av go/src/github.com/creiht/formic/packaging/root/usr/share/formicd/systemd/
 echo 'FORMICD_PORT=8444' > /etc/default/formicd
 
 # Adding some helpful git stuff to the .bashrc 
-echo "" >> ~/.bashrc
-echo "# Added to show git branches" >> ~/.bashrc
-echo 'export PS1="\u@\h \W\[\033[37m\]\$(git_branch)\[\033[00m\] $ "' >> ~/.bashrc
-echo '' >> ~/.bashrc
-echo '# get the current git branch' >> ~/.bashrc
-echo 'git_branch() {' >> ~/.bashrc
-echo "        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'" >> ~/.bashrc
-echo '    }' >> ~/.bashrc
-
-
+if [ "$FANCYPROMPT" = "yes" ]; then
+    echo "" >> ~/.bashrc
+    echo "# Added to show git branches" >> ~/.bashrc
+    echo 'export PS1="\u@\h \W\[\033[37m\]\$(git_branch)\[\033[00m\] $ "' >> ~/.bashrc
+    echo '' >> ~/.bashrc
+    echo '# get the current git branch' >> ~/.bashrc
+    echo 'git_branch() {' >> ~/.bashrc
+    echo "        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'" >> ~/.bashrc
+    echo '    }' >> ~/.bashrc
+fi
 
 echo 
 echo "To start services run:"
 echo "systemctl start synd"
 echo "systemctl start oort-valued"
 echo "systemctl start formicd"
+echo "!! Don't forget to remove the place holder nodes from the ring once you've started your nodes"
 echo ""
 echo "For example: to create a cfsfuse mount point create the location and run cfs:"
 echo "mkdir -p /mnt/cfs"
