@@ -206,7 +206,7 @@ func (s *SyndClient) mainEntry(args []string) error {
 	case "search":
 		return s.SearchNodes(args[1:])
 	case "rm":
-		if len(args) == 3 {
+		if len(args) == 2 {
 			id, err := strconv.ParseUint(args[1], 10, 64)
 			if err != nil {
 				return err
