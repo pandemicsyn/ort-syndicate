@@ -21,6 +21,9 @@ const (
 )
 
 func ParseManagedNodeAddress(addr string) (string, error) {
+	if addr == "" {
+		return "", fmt.Errorf("address missing")
+	}
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return "", err
@@ -35,6 +38,7 @@ func bootstrapManagedNodes(ring ring.Ring) map[uint64]*ManagedNode {
 		addr, err := ParseManagedNodeAddress(node.Address(0))
 		if err != nil {
 			log.Printf("Error bootstrapping node %d: unable to split address %s: %v", node.ID(), node.Address(0), err)
+			log.Println("Node NOT a managed node!")
 			continue
 		}
 		m[node.ID()], err = NewManagedNode(addr)
@@ -59,6 +63,9 @@ type ManagedNode struct {
 
 func NewManagedNode(address string) (*ManagedNode, error) {
 	var err error
+	if address == "" {
+		return &ManagedNode{}, fmt.Errorf("Invalid Address supplied")
+	}
 	var opts []grpc.DialOption
 	var creds credentials.TransportAuthenticator
 	creds = credentials.NewTLS(&tls.Config{
@@ -66,12 +73,12 @@ func NewManagedNode(address string) (*ManagedNode, error) {
 	})
 	opts = append(opts, grpc.WithTransportCredentials(creds))
 	s := &ManagedNode{}
-	s.conn, err = grpc.Dial(address, opts...)
+	s.address = address
+	s.conn, err = grpc.Dial(s.address, opts...)
 	if err != nil {
-		return &ManagedNode{}, fmt.Errorf("Failed to dial ring server for config: %v", err)
+		return &ManagedNode{}, fmt.Errorf("Failed to dial cmdctrl server for node %s: %v", s.address, err)
 	}
 	s.client = cc.NewCmdCtrlClient(s.conn)
-	s.address = address
 	s.active = false
 	s.failcount = 0
 	return s, nil
@@ -162,6 +169,15 @@ func (n *ManagedNode) RingUpdate(r *[]byte, version int64) (bool, error) {
 	defer n.Unlock()
 	if n.ringversion == version {
 		return false, nil
+	}
+	connstate, err := n.conn.State()
+	if err != nil {
+		// TODO: reconnect
+		return false, fmt.Errorf("Ring update of %s failed. grpc.conn err: %v", n.address, err)
+	}
+	if connstate != grpc.Ready {
+		// TODO: reconnect
+		return false, fmt.Errorf("Ring update of %s failed. grpc.conn not ready: %s", n.address, connstate.String())
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
 	ru := &cc.Ring{
