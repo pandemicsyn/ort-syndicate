@@ -475,7 +475,18 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 
 	var weight uint32
 	nodeEnabled := false
+
 	if s.cfg.WeightAssignment == "fixed" {
+		weight = 1000
+		nodeEnabled = true
+	}
+	if s.cfg.WeightAssignment == "self" {
+		log.Println("SELF weight assignment strategy no longer implemented!")
+		weight = 1000
+		nodeEnabled = true
+	}
+	if s.cfg.WeightAssignment == "manual" {
+		log.Println("MANUAL weight assignment strategy no longer implemented!")
 		weight = 1000
 		nodeEnabled = true
 	}
@@ -483,6 +494,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	if err != nil {
 		return &pb.NodeConfig{}, err
 	}
+
 	report := [][]string{
 		[]string{"ID:", fmt.Sprintf("%016x", n.ID())},
 		[]string{"RAW ID", fmt.Sprintf("%d", n.ID())},
@@ -501,6 +513,11 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		log.Println("Failed to apply ring change:", err)
 		log.Println("Ring version is now:", s.r.Version())
 		return &pb.NodeConfig{}, fmt.Errorf("Unable to apply ring change during registration")
+	}
+	s.managedNodes[n.ID()], err = NewManagedNode(n.Address(0))
+	//just log the error, we'll keep retrying to connect
+	if err != nil {
+		log.Printf("Error setting up new managed node %s: %s", n.Address(0), err.Error())
 	}
 	log.Printf("Added node %d ring version is now %d", n.ID(), s.r.Version())
 	return &pb.NodeConfig{Localid: n.ID(), Ring: *s.rb}, nil

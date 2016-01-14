@@ -379,12 +379,15 @@ func (s *SyndClient) SetConfig(config []byte, restart bool) (err error) {
 		RestartRequired: restart,
 	}
 	status, err := s.client.SetConf(ctx, confMsg)
+	if err != nil {
+		return err
+	}
 	report := [][]string{
 		[]string{"Status:", fmt.Sprintf("%v", status.Status)},
 		[]string{"Version:", fmt.Sprintf("%v", status.Version)},
 	}
 	fmt.Print(brimtext.Align(report, nil))
-	return err
+	return nil
 }
 
 // SearchNodes uses a provide pb.Node to search for matching nodes in the active ring
