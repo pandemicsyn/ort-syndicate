@@ -516,7 +516,9 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	}
 	s.managedNodes[n.ID()], err = NewManagedNode(n.Address(0))
 	//just log the error, we'll keep retrying to connect
-	log.Printf("Error setting up new managed node %s: %s", n.Address(0), err.Error())
+	if err != nil {
+		log.Printf("Error setting up new managed node %s: %s", n.Address(0), err.Error())
+	}
 	log.Printf("Added node %d ring version is now %d", n.ID(), s.r.Version())
 	return &pb.NodeConfig{Localid: n.ID(), Ring: *s.rb}, nil
 }
