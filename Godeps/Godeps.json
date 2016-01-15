@@ -1,0 +1,70 @@
+{
+	"ImportPath": "github.com/pandemicsyn/syndicate",
+	"GoVersion": "go1.5",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.1.0-21-g056c9bc",
+			"Rev": "056c9bc7be7190eaa7715723883caffa5f8fa3e4"
+		},
+		{
+			"ImportPath": "github.com/gholt/brimtext",
+			"Rev": "b8eb3a58806ad6cba438e4b372470fd89c837523"
+		},
+		{
+			"ImportPath": "github.com/gholt/ring",
+			"Rev": "b0b00e166d6ef0c3b55cf70e76db1b855b135926"
+		},
+		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "fca8c8854093a154ff1eb580aae10276ad6b1b5f"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "2402d76f3d41f928c7902a765dfc872356dd3aad"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "3760e016850398b85094c4c99e955b8c3dea5711"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+		},
+		{
+			"ImportPath": "golang.org/x/net/http2",
+			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+		},
+		{
+			"ImportPath": "golang.org/x/net/internal/timeseries",
+			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+		},
+		{
+			"ImportPath": "golang.org/x/net/trace",
+			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/compute/metadata",
+			"Rev": "e34a32f9b0ecbc0784865fb2d47f3818c09521d4"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/internal",
+			"Rev": "e34a32f9b0ecbc0784865fb2d47f3818c09521d4"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc",
+			"Rev": "5da22b92e9485c15a6b284d52cc54d6580864c99"
+		},
+		{
+			"ImportPath": "gopkg.in/gholt/brimtext.v1",
+			"Rev": "57edd2a5013c4c6942404de8f605534c63fd4149"
+		}
+	]
+}
