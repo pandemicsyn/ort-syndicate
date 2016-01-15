@@ -16,11 +16,10 @@ import (
 )
 
 const (
-	_FH_CMDCTRL_PORT      = 4444
 	_FH_STOP_NODE_TIMEOUT = 60
 )
 
-func ParseManagedNodeAddress(addr string) (string, error) {
+func ParseManagedNodeAddress(addr string, port int) (string, error) {
 	if addr == "" {
 		return "", fmt.Errorf("address missing")
 	}
@@ -28,14 +27,14 @@ func ParseManagedNodeAddress(addr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s:%d", host, _FH_CMDCTRL_PORT), nil
+	return fmt.Sprintf("%s:%d", host, port), nil
 }
 
-func bootstrapManagedNodes(ring ring.Ring) map[uint64]*ManagedNode {
+func bootstrapManagedNodes(ring ring.Ring, ccport int) map[uint64]*ManagedNode {
 	nodes := ring.Nodes()
 	m := make(map[uint64]*ManagedNode, len(nodes))
 	for _, node := range nodes {
-		addr, err := ParseManagedNodeAddress(node.Address(0))
+		addr, err := ParseManagedNodeAddress(node.Address(0), ccport)
 		if err != nil {
 			log.Printf("Error bootstrapping node %d: unable to split address %s: %v", node.ID(), node.Address(0), err)
 			log.Println("Node NOT a managed node!")

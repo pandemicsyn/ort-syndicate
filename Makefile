@@ -1,6 +1,7 @@
 SHA := $(shell git rev-parse --short HEAD)
 VERSION := $(shell cat VERSION)
 ITTERATION := $(shell date +%s)
+RINGVERSION := $(shell python -c 'import sys, json; print [x["Rev"] for x in json.load(sys.stdin)["Deps"] if x["ImportPath"] == "github.com/gholt/ring"][0]' < Godeps/Godeps.json)
 
 deps: export GO15VENDOREXPERIMENT=1
 deps:
@@ -18,12 +19,12 @@ build:
 	mkdir -p packaging/output
 	mkdir -p packaging/root/usr/local/bin
 	go build -i -v -o packaging/root/usr/local/bin/synd --ldflags " \
-		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
+		-X main.ringVersion=$(RINGVERSION) \
 		-X main.syndVersion=$(shell git rev-parse HEAD) \
 		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
 		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)" github.com/pandemicsyn/syndicate/synd 
 	go build -i -v -o packaging/root/usr/local/bin/syndicate-client --ldflags " \
-		-X main.ringVersion=$(shell git -C $$GOPATH/src/github.com/gholt/ring rev-parse HEAD) \
+		-X main.ringVersion=$(RINGVERSION) \
 		-X main.syndicateClientVersion=$(shell git rev-parse HEAD) \
 		-X main.goVersion=$(shell go version | sed -e 's/ /-/g') \
 		-X main.buildDate=$(shell date -u +%Y-%m-%d.%H:%M:%S)"  github.com/pandemicsyn/syndicate/syndicate-client
