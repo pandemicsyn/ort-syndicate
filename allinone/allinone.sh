@@ -59,6 +59,8 @@ echo "Setting up the imporant bits..."
 go get google.golang.org/grpc
 go get github.com/golang/protobuf/proto
 go get github.com/golang/protobuf/protoc-gen-go
+go get github.com/tools/godep
+go install github.com/tools/godep
 
 echo "Setting up syndicate repo"
 mkdir -p $GOPATH/src/github.com/pandemicsyn

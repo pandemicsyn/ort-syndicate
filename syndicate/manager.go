@@ -100,7 +100,7 @@ func NewServer(cfg *Config, servicename string) (*Server, error) {
 		s.netlimits = append(s.netlimits, n)
 	}
 	s.tierlimits = cfg.TierFilter
-	s.managedNodes = bootstrapManagedNodes(s.r)
+	s.managedNodes = bootstrapManagedNodes(s.r, s.cfg.CmdCtrlPort)
 	s.changeChan = make(chan *changeMsg, 1)
 	go s.RingChangeManager()
 	s.slaves = parseSlaveAddrs(cfg.Slaves)
@@ -514,7 +514,8 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		log.Println("Ring version is now:", s.r.Version())
 		return &pb.NodeConfig{}, fmt.Errorf("Unable to apply ring change during registration")
 	}
-	s.managedNodes[n.ID()], err = NewManagedNode(n.Address(0))
+	maddr, _ := ParseManagedNodeAddress(n.Address(0), s.cfg.CmdCtrlPort)
+	s.managedNodes[n.ID()], err = NewManagedNode(maddr)
 	//just log the error, we'll keep retrying to connect
 	if err != nil {
 		log.Printf("Error setting up new managed node %s: %s", n.Address(0), err.Error())
