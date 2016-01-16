@@ -7,8 +7,8 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
-			"Comment": "v0.1.0-21-g056c9bc",
-			"Rev": "056c9bc7be7190eaa7715723883caffa5f8fa3e4"
+			"Comment": "v0.1.0-23-g5c4df71",
+			"Rev": "5c4df71dfe9ac89ef6287afc05e4c1b16ae65a1e"
 		},
 		{
 			"ImportPath": "github.com/gholt/brimtext",
@@ -16,7 +16,7 @@
 		},
 		{
 			"ImportPath": "github.com/gholt/ring",
-			"Rev": "b0b00e166d6ef0c3b55cf70e76db1b855b135926"
+			"Rev": "be0474228d758766c3fe09cbe10ba72dce2ead2f"
 		},
 		{
 			"ImportPath": "github.com/golang/glog",
@@ -32,31 +32,35 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+			"Rev": "c92cdcb05f66ce5b61460e23498d2dc5fcf69aaf"
 		},
 		{
 			"ImportPath": "golang.org/x/net/http2",
-			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+			"Rev": "c92cdcb05f66ce5b61460e23498d2dc5fcf69aaf"
 		},
 		{
 			"ImportPath": "golang.org/x/net/internal/timeseries",
-			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+			"Rev": "c92cdcb05f66ce5b61460e23498d2dc5fcf69aaf"
 		},
 		{
 			"ImportPath": "golang.org/x/net/trace",
-			"Rev": "a8e212f3d10e1cd58f7669dd2c9d757bf7b98f93"
+			"Rev": "c92cdcb05f66ce5b61460e23498d2dc5fcf69aaf"
 		},
 		{
 			"ImportPath": "golang.org/x/oauth2",
-			"Rev": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+			"Rev": "2baa8a1b9338cf13d9eeb27696d761155fa480be"
+		},
+		{
+			"ImportPath": "google.golang.org/appengine",
+			"Rev": "54bf9150c922186bfc45a00bf9dfcb91a5063275"
 		},
 		{
 			"ImportPath": "google.golang.org/cloud/compute/metadata",
-			"Rev": "e34a32f9b0ecbc0784865fb2d47f3818c09521d4"
+			"Rev": "6f469c6f5e20fde4c2088ed8b80bfa7ae296e622"
 		},
 		{
 			"ImportPath": "google.golang.org/cloud/internal",
-			"Rev": "e34a32f9b0ecbc0784865fb2d47f3818c09521d4"
+			"Rev": "6f469c6f5e20fde4c2088ed8b80bfa7ae296e622"
 		},
 		{
 			"ImportPath": "google.golang.org/grpc",
