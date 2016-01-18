@@ -2,7 +2,6 @@ SHA := $(shell git rev-parse --short HEAD)
 VERSION := $(shell cat VERSION)
 ITTERATION := $(shell date +%s)
 RINGVERSION := $(shell python -c 'import sys, json; print [x["Rev"] for x in json.load(sys.stdin)["Deps"] if x["ImportPath"] == "github.com/gholt/ring"][0]' < Godeps/Godeps.json)
-export GO15VENDOREXPERIMENT=1
 
 deps:
 	go get -u google.golang.org/grpc
@@ -12,8 +11,6 @@ deps:
 	go get -u github.com/gholt/ring/ring
 	go get -u github.com/gholt/store
 	go get -v -u $$(go list ./... | grep -v /vendor/)
-	godep save ./...
-	godep update ./...
 
 build:
 	mkdir -p packaging/output
