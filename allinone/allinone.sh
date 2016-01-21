@@ -68,12 +68,14 @@ cd $GOPATH/src/github.com/pandemicsyn/
 git clone git@github.com:$GIT_USER/syndicate.git
 cd syndicate
 git remote add upstream git@github.com:pandemicsyn/syndicate.git
+make deps
 
 echo "Setting up oort repos"
 cd $GOPATH/src/github.com/pandemicsyn
 git clone git@github.com:$GIT_USER/oort.git
 cd oort
 git remote add upstream git@github.com:pandemicsyn/oort.git
+make deps
 
 echo "Setting up formic/cfs repos"
 mkdir -p $GOPATH/src/github.com/creiht
@@ -82,6 +84,12 @@ git clone git@github.com:$GIT_USER/formic.git
 cd formic
 git remote add upstream git@github.com:creiht/formic.git
 
+echo "Setting up cfs-binary-release repo"
+mkdir -p $GOPATH/src/github.com/getcfs/cfs-binary-release
+cd $GOPATH/src/github.com/getcfs
+git clone git@github.com:$GIT_USER/cfs-binary-release.git
+cd cfs-binary-release
+git remote add upstream git@github.com:getcfs/cfs-binary-release.git
 
 echo "Prepping /etc"
 cd $GOPATH/src/github.com/pandemicsyn/syndicate
@@ -89,8 +97,7 @@ mkdir -p /etc/oort/ring
 mkdir -p /etc/oort/value /etc/oort/group
 cp -av allinone/etc/oort/* /etc/oort
 
-echo "Install go deps"
-make deps
+echo "Install ring deps"
 go install github.com/gholt/ring/ring
 go get github.com/pandemicsyn/ringver
 go install github.com/pandemicsyn/ringver
@@ -138,7 +145,7 @@ systemctl daemon-reload
 echo "Creating data dir"
 mkdir -v -p /data
 
-# setup formic & cfs deps
+echo "Installing formicd & cfs"
 go get github.com/creiht/formic/formicd
 go install github.com/creiht/formic/formicd
 go get github.com/creiht/formic/cfs
@@ -156,12 +163,27 @@ if [ "$FANCYPROMPT" = "yes" ]; then
     echo 'git_branch() {' >> ~/.bashrc
     echo "        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'" >> ~/.bashrc
     echo '    }' >> ~/.bashrc
+f
+
+if [ "$STABLEDEPLOY" = "yes" ]; then
+    echo "STABLEDEPLOY=yes so install'ing binaries from cfs-binary-release"
+    cd $GOPATH/src/github.com/getcfs/cfs-binary-release
+    git pull upstream
+    git fetch -t upstream
+    if [ "$CFSRELEASE" = "" ]; then
+        echo "CFSRELEASE not specified so using latest"
+        make install
+    else
+        git checkout tags/$CFSRELEASE
+        make install
+    fi
 fi
 
 echo 
 echo "To start services run:"
 echo "systemctl start synd"
 echo "systemctl start oort-valued"
+echo "systemctl start oort-groupd"
 echo "systemctl start formicd"
 echo "!! Don't forget to remove the place holder nodes from the ring once you've started your nodes"
 echo ""
