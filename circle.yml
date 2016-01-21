@@ -24,6 +24,7 @@ general:
 test:
   pre:
     - go version
+    - make deps
   override:
     - go test -i github.com/pandemicsyn/syndicate/synd
     - go test -i github.com/pandemicsyn/syndicate/syndicate-client
@@ -31,25 +32,3 @@ test:
     - go install -v github.com/pandemicsyn/syndicate/syndicate-client
   post:
     - GOOS=linux GOARCH=amd64 make build
-deployment:
-  ci:
-    branch: ci
-    owner: pandemicsyn
-    commands:
-      - go get github.com/tcnksm/ghr
-      - go install github.com/tcnksm/ghr
-      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease ci-`cat VERSION` $BUILDPATH
-  qa:
-    branch: qa
-    owner: pandemicsyn
-    commands:
-      - go get github.com/tcnksm/ghr
-      - go install github.com/tcnksm/ghr
-      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease qa-`cat VERSION` $BUILDPATH
-  stable:
-    branch: stable
-    owner: pandemicsyn
-    commands:
-      - go get github.com/tcnksm/ghr
-      - go install github.com/tcnksm/ghr
-      - ghr -t $GITHUB_TOKEN -u pandemicsyn -r syndicate --replace --prerelease stable-`cat VERSION` $BUILDPATH
