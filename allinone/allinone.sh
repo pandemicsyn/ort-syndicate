@@ -31,7 +31,6 @@ source /$USER/.bashrc
 if [ "$FANCYVIM" = "yes" ]; then
     echo "Performing fancy vim install"
     mkdir -p ~/.vim/autoload ~/.vim/bundle && curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
-    git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
     apt-get install -y --force-yes vim-youcompleteme
     go get golang.org/x/tools/cmd/goimports
     git clone https://github.com/fatih/vim-go.git ~/.vim/bundle/vim-go
@@ -151,7 +150,7 @@ go install github.com/creiht/formic/formicd
 go get github.com/creiht/formic/cfs
 go install github.com/creiht/formic/cfs
 cp -av $GOPATH/src/github.com/creiht/formic/packaging/root/usr/share/formicd/systemd/formicd.service /lib/systemd/system
-echo 'FORMICD_PORT=8444' > /etc/default/formicd
+echo 'FORMICD_PORT=8445' > /etc/default/formicd
 
 # Adding some helpful git stuff to the .bashrc 
 if [ "$FANCYPROMPT" = "yes" ]; then
@@ -163,7 +162,7 @@ if [ "$FANCYPROMPT" = "yes" ]; then
     echo 'git_branch() {' >> ~/.bashrc
     echo "        git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'" >> ~/.bashrc
     echo '    }' >> ~/.bashrc
-f
+fi
 
 if [ "$STABLEDEPLOY" = "yes" ]; then
     echo "STABLEDEPLOY=yes so install'ing binaries from cfs-binary-release"
