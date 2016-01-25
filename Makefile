@@ -9,6 +9,8 @@ deps:
 	go get -u github.com/gholt/ring
 	go get -u github.com/gholt/ring/ring
 	go get -u github.com/gholt/store
+	go get -u github.com/pandemicsyn/cmdctrl
+	go get -u github.com/pandemicsyn/cmdctrl/api
 
 build:
 	mkdir -p packaging/output
