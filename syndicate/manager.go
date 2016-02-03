@@ -68,21 +68,51 @@ type Server struct {
 	bb           *[]byte
 	netlimits    []*net.IPNet
 	tierlimits   []string
-	managedNodes map[uint64]*ManagedNode
+	managedNodes map[uint64]ManagedNode
 	changeChan   chan *changeMsg
+	// mostly just present to aid mocking
+	rbLoaderFn  func(path string) ([]byte, error)
+	rbPersistFn func(c *RingChange, renameMaster bool) (error, error)
 }
 
-func NewServer(cfg *Config, servicename string) (*Server, error) {
+type SyndicateMockOpt func(*Server)
+
+func WithRingBuilderPersister(p func(c *RingChange, renameMaster bool) (error, error)) SyndicateMockOpt {
+	return func(s *Server) {
+		s.rbPersistFn = p
+	}
+}
+
+func WithRingBuilderBytesLoader(l func(path string) ([]byte, error)) SyndicateMockOpt {
+	return func(s *Server) {
+		s.rbLoaderFn = l
+	}
+}
+
+func NewServer(cfg *Config, servicename string, opts ...SyndicateMockOpt) (*Server, error) {
 	var err error
 	s := new(Server)
 	s.cfg = cfg
 	s.servicename = servicename
 	s.parseConfig()
 
+	for _, opt := range opts {
+		opt(s)
+	}
+	if s.rbPersistFn == nil {
+		s.rbPersistFn = s.ringBuilderPersisterFn
+	}
+	if s.rbLoaderFn == nil {
+		s.rbLoaderFn = func(path string) ([]byte, error) {
+			return ioutil.ReadFile(path)
+		}
+	}
+
 	bfile, rfile, err := getRingPaths(cfg, s.servicename)
 	if err != nil {
 		panic(err)
 	}
+
 	_, s.b, err = ring.RingOrBuilder(bfile)
 	FatalIf(err, fmt.Sprintf("Builder file (%s) load failed:", bfile))
 	s.r, _, err = ring.RingOrBuilder(rfile)
@@ -160,30 +190,60 @@ func (s *Server) parseConfig() {
 }
 
 func (s *Server) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-%s.builder", s.cfg.RingDir, version, s.servicename))
+	b, err := s.rbLoaderFn(fmt.Sprintf("%s/%d-%s.builder", s.cfg.RingDir, version, s.servicename))
 	if err != nil {
 		return ring, builder, err
 	}
-	r, err := ioutil.ReadFile(fmt.Sprintf("%s/%d-%s.ring", s.cfg.RingDir, version, s.servicename))
+	r, err := s.rbLoaderFn(fmt.Sprintf("%s/%d-%s.ring", s.cfg.RingDir, version, s.servicename))
 	if err != nil {
 		return ring, builder, err
 	}
 	return &r, &b, nil
 }
 
-type ringChange struct {
+type RingChange struct {
 	b *ring.Builder
 	r ring.Ring
 	v int64
 }
 
-func (s *Server) applyRingChange(c *ringChange) error {
-	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-%s.builder", s.cfg.RingDir, c.v, s.servicename)); err != nil {
-		return err
+func (s *Server) ringBuilderPersisterFn(c *RingChange, renameMaster bool) (error, error) {
+	//Write Ring/Builder out to versioned file names
+	if !renameMaster {
+		if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%d-%s.builder", s.cfg.RingDir, c.v, s.servicename)); err != nil {
+			return err, nil
+		}
+		if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%d-%s.ring", s.cfg.RingDir, c.v, s.servicename)); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	} else {
+		//Write Ring/Builder out to plain servicename.ring and servicename.builder files
+		if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename)); err != nil {
+			log.Println("Unable to persist builder!")
+			return err, nil
+		}
+		if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%s.ring", s.cfg.RingDir, s.servicename)); err != nil {
+			log.Println("Unable to persist ring!")
+			return nil, err
+		}
+		return nil, nil
 	}
-	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%d-%s.ring", s.cfg.RingDir, c.v, s.servicename)); err != nil {
-		return err
+
+}
+
+func (s *Server) applyRingChange(c *RingChange) error {
+
+	builderErr, ringErr := s.rbPersistFn(c, false)
+	if builderErr != nil {
+		log.Println("Error persisting builder")
+		return builderErr
 	}
+	if ringErr != nil {
+		log.Println("Error persisting ring")
+		return ringErr
+	}
+
 	newRB, newBB, err := s.loadRingBuilderBytes(c.v)
 	if err != nil {
 		return fmt.Errorf("Failed to load new ring/builder bytes: %s", err)
@@ -192,14 +252,8 @@ func (s *Server) applyRingChange(c *ringChange) error {
 	if err != nil {
 		return fmt.Errorf("Ring replicate failed: %s", err)
 	}
-	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename)); err != nil {
-		log.Println("Unable to persist builder!")
-		return err
-	}
-	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%s.ring", s.cfg.RingDir, s.servicename)); err != nil {
-		log.Println("Unable to persist ring!")
-		return err
-	}
+	//now update the current working ring
+	builderErr, ringErr = s.rbPersistFn(c, true)
 	s.rb = newRB
 	s.bb = newBB
 	s.b = c.b
@@ -235,7 +289,7 @@ func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) 
 	log.Print(brimtext.Align(report, nil))
 	newRing := b.Ring()
 	log.Println("Attempting to apply ring version:", newRing.Version())
-	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println("Failed to apply ring change:", err)
 	}
@@ -261,7 +315,7 @@ func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, erro
 	newRing := b.Ring()
 	go s.removeManagedNode(n.Id)
 	log.Println("Attempting to apply ring version:", newRing.Version())
-	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println(" Failed to apply ring change:", err)
 	}
@@ -285,7 +339,7 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 	b.SetConf(conf.Conf)
 	newRing := b.Ring()
 	log.Println("Attempting to apply ring version:", newRing.Version())
-	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println("Failed to apply ring change:", err)
 	}
@@ -508,14 +562,14 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	log.Print(brimtext.Align(report, nil))
 	newRing := b.Ring()
 	log.Println("Attempting to apply ring version:", newRing.Version())
-	err = s.applyRingChange(&ringChange{b: b, r: newRing, v: newRing.Version()})
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println("Failed to apply ring change:", err)
 		log.Println("Ring version is now:", s.r.Version())
 		return &pb.NodeConfig{}, fmt.Errorf("Unable to apply ring change during registration")
 	}
 	maddr, _ := ParseManagedNodeAddress(n.Address(0), s.cfg.CmdCtrlPort)
-	s.managedNodes[n.ID()], err = NewManagedNode(maddr)
+	s.managedNodes[n.ID()], err = NewManagedNode(&ManagedNodeOpts{Address: maddr})
 	//just log the error, we'll keep retrying to connect
 	if err != nil {
 		log.Printf("Error setting up new managed node %s: %s", n.Address(0), err.Error())
