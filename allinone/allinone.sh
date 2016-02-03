@@ -103,7 +103,7 @@ go install github.com/pandemicsyn/ringver
 
 echo "Setting up valuestore rings"
 mkdir -p /etc/oort/ring/value
-ring /etc/oort/ring/value/valuestore.builder create replicas=1 configfile=/etc/oort/valuestore.toml
+ring /etc/oort/ring/value/valuestore.builder create replicas=1 config-file=/etc/oort/valuestore.toml
 ring /etc/oort/ring/value/valuestore.builder add active=true capacity=1000 tier0=removeme
 ring /etc/oort/ring/value/valuestore.builder ring
 RINGVER=`ringver /etc/oort/ring/value/valuestore.ring`
@@ -112,7 +112,7 @@ cp -av /etc/oort/ring/value/valuestore.builder /etc/oort/ring/value/$RINGVER-val
 
 echo "Setting up groupstore rings"
 mkdir -p /etc/oort/ring/group
-ring /etc/oort/ring/group/groupstore.builder create replicas=1 configfile=/etc/oort/groupstore.toml
+ring /etc/oort/ring/group/groupstore.builder create replicas=1 config-file=/etc/oort/groupstore.toml
 ring /etc/oort/ring/group/groupstore.builder add active=true capacity=1000 tier0=removeme
 ring /etc/oort/ring/group/groupstore.builder ring
 RINGVER=`ringver /etc/oort/ring/group/groupstore.ring`
