@@ -12,6 +12,9 @@ deps:
 	go get -u github.com/pandemicsyn/cmdctrl
 	go get -u github.com/pandemicsyn/cmdctrl/api
 
+test:
+	go test -v ./...
+
 build:
 	mkdir -p packaging/output
 	mkdir -p packaging/root/usr/local/bin
