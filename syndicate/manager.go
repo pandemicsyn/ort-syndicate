@@ -71,8 +71,9 @@ type Server struct {
 	managedNodes map[uint64]ManagedNode
 	changeChan   chan *changeMsg
 	// mostly just present to aid mocking
-	rbLoaderFn  func(path string) ([]byte, error)
-	rbPersistFn func(c *RingChange, renameMaster bool) (error, error)
+	rbLoaderFn   func(path string) ([]byte, error)
+	rbPersistFn  func(c *RingChange, renameMaster bool) (error, error)
+	getBuilderFn func(path string) (*ring.Builder, error)
 }
 
 type SyndicateMockOpt func(*Server)
@@ -86,6 +87,12 @@ func WithRingBuilderPersister(p func(c *RingChange, renameMaster bool) (error, e
 func WithRingBuilderBytesLoader(l func(path string) ([]byte, error)) SyndicateMockOpt {
 	return func(s *Server) {
 		s.rbLoaderFn = l
+	}
+}
+
+func WithGetBuilderFn(l func(path string) (*ring.Builder, error)) SyndicateMockOpt {
+	return func(s *Server) {
+		s.getBuilderFn = l
 	}
 }
 
@@ -106,6 +113,9 @@ func NewServer(cfg *Config, servicename string, opts ...SyndicateMockOpt) (*Serv
 		s.rbLoaderFn = func(path string) ([]byte, error) {
 			return ioutil.ReadFile(path)
 		}
+	}
+	if s.getBuilderFn == nil {
+		s.getBuilderFn = s.getBuilder
 	}
 
 	bfile, rfile, err := getRingPaths(cfg, s.servicename)
@@ -233,7 +243,6 @@ func (s *Server) ringBuilderPersisterFn(c *RingChange, renameMaster bool) (error
 }
 
 func (s *Server) applyRingChange(c *RingChange) error {
-
 	builderErr, ringErr := s.rbPersistFn(c, false)
 	if builderErr != nil {
 		log.Println("Error persisting builder")
@@ -298,18 +307,28 @@ func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) 
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
 }
 
+func (s *Server) getBuilder(path string) (*ring.Builder, error) {
+	_, b, err := ring.RingOrBuilder(path)
+	return b, err
+}
+
+func (s *Server) getRing(path string) (ring.Ring, error) {
+	r, _, err := ring.RingOrBuilder(path)
+	return r, err
+}
+
 func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got RemoveNode request for:", n.Id)
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
 	}
 	node := b.Node(n.Id)
 	if node == nil {
-		return &pb.RingStatus{Status: true, Version: s.r.Version()}, fmt.Errorf("Node ID not found")
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Node ID not found")
 	}
 	b.RemoveNode(n.Id)
 	newRing := b.Ring()
@@ -431,7 +450,7 @@ func (s *Server) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, err
 func (s *Server) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
 	s.RLock()
 	defer s.RUnlock()
-	return &pb.Ring{Ring: *s.rb}, nil
+	return &pb.Ring{Version: s.r.Version(), Ring: *s.rb}, nil
 }
 
 // validNodeIP verifies that the provided ip is not a loopback or multicast address
@@ -482,7 +501,11 @@ func (s *Server) validTiers(t []string) bool {
 // in any existing entries meta or address fields.
 func (s *Server) nodeInRing(hostname string, addrs []string) bool {
 	a := strings.Join(addrs, "|")
-	r, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", hostname), fmt.Sprintf("address~=%s", a)})
+	r, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", hostname)})
+	if len(r) != 0 {
+		return true
+	}
+	r, _ = s.r.Nodes().Filter([]string{fmt.Sprintf("address~=%s", a)})
 	if len(r) != 0 {
 		return true
 	}

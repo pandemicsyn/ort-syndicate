@@ -99,7 +99,7 @@ message NodeConfig {
 }
 
 message Ring {
-    uint64 version = 1;
+    int64 version = 1;
     bytes ring = 2;
 }
 
