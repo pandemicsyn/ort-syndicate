@@ -516,7 +516,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	s.Lock()
 	defer s.Unlock()
 	log.Printf("Got Register request: %#v", r)
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.NodeConfig{}, err
@@ -539,13 +539,30 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		return &pb.NodeConfig{}, fmt.Errorf("No valid addresses provided")
 	case s.nodeInRing(r.Hostname, addrs):
 		a := strings.Join(addrs, "|")
-		r, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", r.Hostname), fmt.Sprintf("address~=%s", a)})
-		if len(r) > 1 {
-			log.Println("Found more than one match when attempting to find node ID:", r)
-			return &pb.NodeConfig{}, fmt.Errorf("Node already in ring/unable to obtain ID")
+		metanodes, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", r.Hostname)})
+		if len(metanodes) > 1 {
+			log.Println("Found more than one meta match when attempting to find node ID")
+			return &pb.NodeConfig{}, fmt.Errorf("Node already in ring/unable to obtain ID (too many matches)")
 		}
-		log.Println("Node already in ring, sending localid:", r[0].ID())
-		return &pb.NodeConfig{Localid: r[0].ID(), Ring: *s.rb}, nil
+		addrnodes, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("address~=%s", a)})
+		if len(addrnodes) > 1 {
+			log.Println("Found more than one addr match when attempting to find node ID")
+			return &pb.NodeConfig{}, fmt.Errorf("Node already in ring/unable to obtain ID (too many matches)")
+		}
+		var metaid uint64
+		if len(metanodes) == 1 {
+			metaid = metanodes[0].ID()
+		}
+		var addrid uint64
+		if len(addrnodes) == 1 {
+			addrid = addrnodes[0].ID()
+		}
+		if metaid != addrid {
+			log.Printf("Node already in ring, addrid and metaid missmatch: addrid %d vs metaid %d", addrid, metaid)
+			return &pb.NodeConfig{}, fmt.Errorf("Node already in ring, unable to obtain ID (id by addr and id by meta do not match")
+		}
+		log.Println("Node already in ring, sending localid:", addrid)
+		return &pb.NodeConfig{Localid: addrid, Ring: *s.rb}, nil
 	case !s.validTiers(r.Tiers):
 		return &pb.NodeConfig{}, fmt.Errorf("Invalid tiers provided")
 	}
@@ -553,19 +570,21 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	var weight uint32
 	nodeEnabled := false
 
-	if s.cfg.WeightAssignment == "fixed" {
+	switch s.cfg.WeightAssignment {
+	case "fixed":
 		weight = 1000
 		nodeEnabled = true
-	}
-	if s.cfg.WeightAssignment == "self" {
+	case "self":
 		log.Println("SELF weight assignment strategy no longer implemented!")
 		weight = 1000
 		nodeEnabled = true
-	}
-	if s.cfg.WeightAssignment == "manual" {
-		log.Println("MANUAL weight assignment strategy no longer implemented!")
-		weight = 1000
-		nodeEnabled = true
+	case "manual":
+		weight = 0
+		nodeEnabled = false
+	default:
+		log.Println("No weight assignment strategy specified, adding unconfigured node!")
+		weight = 0
+		nodeEnabled = false
 	}
 	n, err := b.AddNode(nodeEnabled, weight, r.Tiers, addrs, fmt.Sprintf("%s|%s", r.Hostname, r.Hardwareid), []byte(""))
 	if err != nil {

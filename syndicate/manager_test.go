@@ -67,6 +67,10 @@ func newTestServerWithDefaults() (*Server, *MockRingBuilderThings) {
 		changeChan:   make(chan *changeMsg, 1),
 	}
 	s := newTestServer(&Config{}, "test", mock)
+	_, netblock, _ := net.ParseCIDR("10.0.0.0/24")
+	s.netlimits = append(s.netlimits, netblock)
+	_, netblock, _ = net.ParseCIDR("1.2.3.0/24")
+	s.netlimits = append(s.netlimits, netblock)
 	return s, mock
 }
 
@@ -201,6 +205,179 @@ func TestServer_GetRing(t *testing.T) {
 }
 
 func TestServer_RegisterNode(t *testing.T) {
+	s, _ := newTestServerWithDefaults()
+	ctx := context.Background()
+	badRequests := map[string]*pb.RegisterRequest{
+		"Bad Network Interface": &pb.RegisterRequest{
+			Hostname: "badnetiface.test.com",
+			Addrs:    []string{"127.0.0.1/32", "192.168.2.2/32"},
+			Tiers:    []string{"badnetiface.test.com", "zone1"},
+		},
+		"Duplicate server name and addr": &pb.RegisterRequest{
+			Hostname: "server1",
+			Addrs:    []string{"1.2.3.4/32", "127.0.0.1/32", "192.168.2.2/32"},
+			Tiers:    []string{"server1", "zone1"},
+		},
+		"Bad tier": &pb.RegisterRequest{
+			Hostname: "server42",
+			Addrs:    []string{"10.0.0.42/32", "127.0.0.1/32", "192.168.2.2/32"},
+			Tiers:    []string{""},
+		},
+	}
+
+	for k, _ := range badRequests {
+		r, err := s.RegisterNode(ctx, badRequests[k])
+		if err == nil {
+			t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have returned error because %s", badRequests[k], r, err.Error(), k)
+		}
+	}
+
+	//now add a valid entry with the default strategy
+	validRequest := &pb.RegisterRequest{
+		Hostname: "server2",
+		Addrs:    []string{"10.0.0.2/32", "127.0.0.1/32"},
+		Tiers:    []string{"server2", "zone2"},
+	}
+	r, err := s.RegisterNode(ctx, validRequest)
+	if err != nil {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have succeeded", validRequest, r, err.Error())
+	}
+	nodesbyaddr, _ := s.b.Nodes().Filter([]string{"address~=10.0.0.2"})
+	nodesbymeta, _ := s.b.Nodes().Filter([]string{"meta~=server2.*"})
+	if len(nodesbyaddr) != 1 || len(nodesbyaddr) != 1 {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have resulted with new ring entry. by addr (%v), by meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+	if len(nodesbyaddr) == 1 && len(nodesbyaddr) == 1 {
+		if r.Localid != nodesbyaddr[0].ID() || r.Localid != nodesbymeta[0].ID() {
+			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
+		}
+	} else {
+		t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) missing a entry by addr (%v) or meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+	//verify default weight assignment
+	if nodesbyaddr[0].Capacity() != 0 || nodesbyaddr[0].Active() == true {
+		t.Errorf("RegisterNodes weight assignment strategy is default but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
+	}
+
+	//test node already in ring
+	validRequest.Reset()
+	validRequest = &pb.RegisterRequest{
+		Hostname: "server2",
+		Addrs:    []string{"10.0.0.2/32", "127.0.0.1/32"},
+		Tiers:    []string{"server2", "zone2"},
+	}
+	r, err = s.RegisterNode(ctx, validRequest)
+	if err != nil {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have succeeded", validRequest, r, err.Error())
+	}
+	nodesbyaddr, _ = s.b.Nodes().Filter([]string{"address~=10.0.0.2"})
+	nodesbymeta, _ = s.b.Nodes().Filter([]string{"meta~=server2.*"})
+	if len(nodesbyaddr) != 1 || len(nodesbyaddr) != 1 {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should not have resulted with new ring entry. by addr (%v), by meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+	if len(nodesbyaddr) == 1 && len(nodesbyaddr) == 1 {
+		if r.Localid != nodesbyaddr[0].ID() || r.Localid != nodesbymeta[0].ID() {
+			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
+		} else {
+			//verify default weight assignment
+			if nodesbyaddr[0].Capacity() != 0 || nodesbyaddr[0].Active() != false {
+				t.Errorf("RegisterNodes weight assignment strategy is default but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
+			}
+		}
+	} else {
+		t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) missing a entry by addr (%v) or meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+
+	//test fixed
+	s.cfg.WeightAssignment = "fixed"
+	validRequest.Reset()
+	validRequest = &pb.RegisterRequest{
+		Hostname: "server3",
+		Addrs:    []string{"10.0.0.3/32", "127.0.0.1/32"},
+		Tiers:    []string{"server3", "zone3"},
+	}
+	r, err = s.RegisterNode(ctx, validRequest)
+	if err != nil {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have succeeded", validRequest, r, err.Error())
+	}
+	nodesbyaddr, _ = s.b.Nodes().Filter([]string{"address~=10.0.0.3"})
+	nodesbymeta, _ = s.b.Nodes().Filter([]string{"meta~=server3.*"})
+	if len(nodesbyaddr) != 1 || len(nodesbyaddr) != 1 {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should not have resulted with new ring entry. by addr (%v), by meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+	if len(nodesbyaddr) == 1 && len(nodesbyaddr) == 1 {
+		if r.Localid != nodesbyaddr[0].ID() || r.Localid != nodesbymeta[0].ID() {
+			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
+		} else {
+			//verify default weight assignment
+			if nodesbyaddr[0].Capacity() != 1000 || nodesbyaddr[0].Active() != true {
+				t.Errorf("RegisterNodes weight assignment strategy is fixed but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
+			}
+		}
+	} else {
+		t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) missing a entry by addr (%v) or meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+
+	// test self
+	s.cfg.WeightAssignment = "self"
+	validRequest.Reset()
+	validRequest = &pb.RegisterRequest{
+		Hostname: "server4",
+		Addrs:    []string{"10.0.0.4/32", "127.0.0.1/32"},
+		Tiers:    []string{"server4", "zone4"},
+	}
+	r, err = s.RegisterNode(ctx, validRequest)
+	if err != nil {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have succeeded", validRequest, r, err.Error())
+	}
+	nodesbyaddr, _ = s.b.Nodes().Filter([]string{"address~=10.0.0.4"})
+	nodesbymeta, _ = s.b.Nodes().Filter([]string{"meta~=server4.*"})
+	if len(nodesbyaddr) != 1 || len(nodesbyaddr) != 1 {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should not have resulted with new ring entry. by addr (%v), by meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+	if len(nodesbyaddr) == 1 && len(nodesbyaddr) == 1 {
+		if r.Localid != nodesbyaddr[0].ID() || r.Localid != nodesbymeta[0].ID() {
+			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
+		} else {
+			//verify default weight assignment
+			if nodesbyaddr[0].Capacity() != 1000 || nodesbyaddr[0].Active() != true {
+				t.Errorf("RegisterNodes weight assignment strategy is self but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
+			}
+		}
+	} else {
+		t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) missing a entry by addr (%v) or meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+
+	//test manual
+	s.cfg.WeightAssignment = "manual"
+	validRequest.Reset()
+	validRequest = &pb.RegisterRequest{
+		Hostname: "server5",
+		Addrs:    []string{"10.0.0.5/32", "127.0.0.1/32"},
+		Tiers:    []string{"server5", "zone5"},
+	}
+	r, err = s.RegisterNode(ctx, validRequest)
+	if err != nil {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should have succeeded", validRequest, r, err.Error())
+	}
+	nodesbyaddr, _ = s.b.Nodes().Filter([]string{"address~=10.0.0.5"})
+	nodesbymeta, _ = s.b.Nodes().Filter([]string{"meta~=server5.*"})
+	if len(nodesbyaddr) != 1 || len(nodesbyaddr) != 1 {
+		t.Errorf("RegisterNode(ctx, %#v) (%#v, %s) should not have resulted with new ring entry. by addr (%v), by meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+	if len(nodesbyaddr) == 1 && len(nodesbyaddr) == 1 {
+		if r.Localid != nodesbyaddr[0].ID() || r.Localid != nodesbymeta[0].ID() {
+			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
+		} else {
+			//verify default weight assignment
+			if nodesbyaddr[0].Capacity() != 0 || nodesbyaddr[0].Active() != false {
+				t.Errorf("RegisterNodes weight assignment strategy is manual but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
+			}
+		}
+	} else {
+		t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) missing a entry by addr (%v) or meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
+	}
+
 }
 
 func TestParseSlaveAddrs(t *testing.T) {
