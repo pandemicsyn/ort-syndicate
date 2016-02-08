@@ -177,12 +177,12 @@ func (s *Server) parseConfig() {
 		s.cfg.Port = DefaultPort
 	}
 	if s.cfg.MsgRingPort == 0 {
-		log.Println("Config didn't specify ring port, using default:", DefaultPort)
+		log.Println("Config didn't specify msg ring port, using default:", DefaultMsgRingPort)
 		s.cfg.MsgRingPort = DefaultMsgRingPort
 	}
 	if s.cfg.CmdCtrlPort == 0 {
 		log.Println("Config didn't specify cmdctrl port, using default:", DefaultCmdCtrlPort)
-		s.cfg.Port = DefaultCmdCtrlPort
+		s.cfg.CmdCtrlPort = DefaultCmdCtrlPort
 	}
 	if s.cfg.RingDir == "" {
 		s.cfg.RingDir = filepath.Join(DefaultRingDir, s.servicename)
@@ -272,11 +272,12 @@ func (s *Server) applyRingChange(c *RingChange) error {
 }
 
 // TODO: Need field/value error checks
+// Not used by anything.
 func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got AddNode request")
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -301,10 +302,10 @@ func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) 
 	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println("Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
 	}
 	log.Println("Ring version is now:", s.r.Version())
-
-	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
+	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
 func (s *Server) getBuilder(path string) (*ring.Builder, error) {
@@ -324,7 +325,7 @@ func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, erro
 	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
-		return &pb.RingStatus{}, err
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
 	}
 	node := b.Node(n.Id)
 	if node == nil {
@@ -337,9 +338,10 @@ func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, erro
 	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println(" Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
 	}
 	log.Println("Ring version is now:", s.r.Version())
-	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
+	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
 func (s *Server) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, error) {
@@ -350,7 +352,8 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 	s.Lock()
 	defer s.Unlock()
 	log.Println("Got SetConf request")
-	_, b, err := ring.RingOrBuilder(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	log.Println(s.r.Version())
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
@@ -361,9 +364,10 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
 	if err != nil {
 		log.Println("Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
 	}
 	log.Println("Ring version is now:", s.r.Version())
-	return &pb.RingStatus{Status: true, Version: s.r.Version()}, err
+	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
 func (s *Server) SetActive(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
@@ -400,16 +404,17 @@ func (s *Server) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, e
 	if n.Meta != "" {
 		filter = append(filter, fmt.Sprintf("meta~=%s.*", n.Meta))
 	}
-	if len(n.Tiers) >= 1 {
+	if len(n.Tiers) > 0 {
 		for _, v := range n.Tiers {
 			filter = append(filter, fmt.Sprintf("tier~=%s.*", v))
 		}
 	}
-	if len(n.Addresses) >= 1 {
+	if len(n.Addresses) > 0 {
 		for _, v := range n.Addresses {
 			filter = append(filter, fmt.Sprintf("address~=%s.*", v))
 		}
 	}
+	log.Println("filter:", filter)
 	nodes, err := s.r.Nodes().Filter(filter)
 	res := make([]*pb.Node, len(nodes))
 	if err != nil {
@@ -442,8 +447,9 @@ func (s *Server) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, err
 
 	config := &pb.RingConf{
 		Status: &pb.RingStatus{Status: true, Version: s.r.Version()},
-		Conf:   &pb.Conf{Conf: s.r.Conf(), RestartRequired: false},
+		Conf:   &pb.Conf{Conf: node.Conf(), RestartRequired: false},
 	}
+	log.Println(config)
 	return config, nil
 }
 

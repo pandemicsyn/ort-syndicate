@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -48,8 +49,8 @@ func (f *MockRingBuilderThings) GetBuilder(path string) (*ring.Builder, error) {
 func newTestServerWithDefaults() (*Server, *MockRingBuilderThings) {
 	b := ring.NewBuilder(64)
 	b.SetReplicaCount(3)
-	b.AddNode(true, 1, []string{"server1", "zone1"}, []string{"1.2.3.4:56789"}, "server1|meta one", []byte("Conf"))
-	b.AddNode(true, 1, []string{"dummy1", "zone42"}, []string{"1.42.42.42:56789"}, "dummy1|meta one", []byte("Conf"))
+	b.AddNode(true, 1, []string{"server1", "zone1"}, []string{"1.2.3.4:56789"}, "server1|meta one", []byte("Conf Thing1"))
+	b.AddNode(true, 1, []string{"dummy1", "zone42"}, []string{"1.42.42.42:56789"}, "dummy1|meta one", []byte("Dummy Conf"))
 	ring := b.Ring()
 
 	rbytes := []byte("imnotaring")
@@ -78,7 +79,6 @@ func newTestServer(cfg *Config, servicename string, mockinfo *MockRingBuilderThi
 	s := &Server{}
 	s.cfg = cfg
 	s.servicename = servicename
-	//s.parseConfig()
 
 	s.rbPersistFn = mockinfo.Persist
 	s.rbLoaderFn = mockinfo.BytesLoader
@@ -103,13 +103,71 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestServer_AddNode(t *testing.T) {
+	s, m := newTestServerWithDefaults()
+	ctx := context.Background()
+
+	origVersion := s.r.Version()
+	n := &pb.Node{}
+	n.Active = true
+	n.Addresses = []string{"10.1.1.1:4242"}
+	n.Capacity = 100
+	n.Conf = []byte("test conf")
+	n.Meta = "newtestnode"
+	n.Tiers = []string{"newtestnode"}
+	r, err := s.AddNode(ctx, n)
+	if err != nil {
+		t.Error(err)
+	}
+	if r.Version == origVersion {
+		t.Error("Ring change failed")
+	}
+
+	//failures
+	origVersion = s.r.Version()
+	m.buildererr = fmt.Errorf("Can't even")
+	n = &pb.Node{}
+	n.Active = true
+	n.Addresses = []string{"10.1.1.2:4242"}
+	n.Capacity = 100
+	n.Conf = []byte("test conf")
+	n.Meta = "newtestnode2"
+	n.Tiers = []string{"newtestnode2"}
+	r, err = s.AddNode(ctx, n)
+	if err == nil {
+		t.Errorf("Should have returned error")
+	}
+	if r.Version != 0 {
+		if r.Version != origVersion {
+			t.Errorf("Ring version should not have changed")
+		}
+	}
+
+	m.buildererr = nil
+
+	origVersion = s.r.Version()
+	m.persistBuilderErr = fmt.Errorf("Can't even")
+	n = &pb.Node{}
+	n.Active = true
+	n.Addresses = []string{"10.1.1.2:4242"}
+	n.Capacity = 100
+	n.Conf = []byte("test conf")
+	n.Meta = "newtestnode2"
+	n.Tiers = []string{"newtestnode2"}
+	r, err = s.AddNode(ctx, n)
+	if err == nil {
+		t.Errorf("Should have returned error")
+	}
+	if r.Version != origVersion {
+		t.Errorf("Ring version should not have changed")
+	}
+	m.persistBuilderErr = nil
 }
 
 func TestServer_RemoveNode(t *testing.T) {
 	s, m := newTestServerWithDefaults()
 	ctx := context.Background()
 
-	origVersion := m.ring.Version()
+	origVersion := s.r.Version()
 
 	nonExistent := &pb.Node{Id: 4242}
 
@@ -125,9 +183,9 @@ func TestServer_RemoveNode(t *testing.T) {
 			t.Errorf("RemoveNode(%#v) should have not returned new ring version: %#v", nonExistent, r)
 		}
 	}
+
 	nodes, err := m.builder.Nodes().Filter([]string{"meta~=dummy1.*"})
 	legitNode := &pb.Node{Id: nodes[0].ID()}
-
 	r, err = s.RemoveNode(ctx, legitNode)
 	if err != nil {
 		t.Errorf("RemoveNode(%#v) should not have returned error (%s): %#v", legitNode, err.Error(), r)
@@ -135,10 +193,25 @@ func TestServer_RemoveNode(t *testing.T) {
 	if r.Version == origVersion || r.Status == false {
 		t.Errorf("RemoveNode(%#v) should have returned new version and true status (%s): %#v", legitNode, err.Error(), r)
 	}
-
 	nodes, err = m.builder.Nodes().Filter([]string{"meta~=dummy1.*"})
 	if len(nodes) != 0 {
 		t.Errorf("RemoveNode(%#v) should have modified the builder but didn't", legitNode)
+	}
+
+	if len(m.builder.Nodes()) == 0 {
+		t.Errorf("SHOULD NOT HAVE REMOVED ALL")
+	}
+
+	m.buildererr = fmt.Errorf("Can't even")
+	origVersion = s.r.Version()
+	legitNode = &pb.Node{Id: m.builder.Nodes()[0].ID()}
+	r, err = s.RemoveNode(ctx, legitNode)
+	if err == nil {
+		t.Errorf("RemoveNode(ctx, %#v) SHOULD have returned error: %s", legitNode, err.Error())
+	}
+	if r.Version != origVersion || r.Status == true {
+		log.Println(origVersion)
+		t.Errorf("RemoveNode(ctx, %#v) should not have modified ring: %#v", legitNode, r)
 	}
 }
 
@@ -146,9 +219,47 @@ func TestServer_ModNode(t *testing.T) {
 }
 
 func TestServer_SetConf(t *testing.T) {
+	s, m := newTestServerWithDefaults()
+	ctx := context.Background()
+
+	oldVersion := s.r.Version()
+	newConf := &pb.Conf{}
+	newConf.Conf = []byte("new config")
+	r, err := s.SetConf(ctx, newConf)
+	if err != nil {
+		t.Errorf("SetConf(ctx, %#v) should not have failed: %s", newConf, err.Error())
+	}
+	if r.Version == oldVersion || r.Status == false {
+		t.Errorf("SetConf(ctx, %#v) should have resulted in ring change: %#v", newConf, r)
+	}
+	if !bytes.Equal(s.r.Conf(), newConf.Conf) {
+		t.Errorf("SetConf(ctx, %#v) failed to actually update conf bytes", newConf)
+	}
+
+	m.buildererr = fmt.Errorf("Can't even")
+	oldVersion = s.r.Version()
+	r, err = s.SetConf(ctx, newConf)
+	if err == nil {
+		t.Errorf("SetConf(ctx, %#v) SHOULD have failed", newConf)
+	}
+	m.buildererr = nil
+
+	m.persistRingErr = fmt.Errorf("Can't even")
+	oldVersion = s.r.Version()
+	r, err = s.SetConf(ctx, newConf)
+	if err == nil {
+		t.Errorf("SetConf(ctx, %#v) should have failed: %s", newConf, err.Error())
+	} else {
+		if r.Version != oldVersion || r.Status == true {
+			t.Errorf("SetConf(ctx, %#v) SHOULD not have resulted in ring change: %#v", newConf, r)
+		}
+	}
+	m.persistRingErr = nil
+
 }
 
 func TestServer_SetActive(t *testing.T) {
+
 }
 
 func TestServer_GetVersion(t *testing.T) {
@@ -181,9 +292,132 @@ func TestServer_GetGlobalConfig(t *testing.T) {
 }
 
 func TestServer_SearchNodes(t *testing.T) {
+	s, _ := newTestServerWithDefaults()
+	ctx := context.Background()
+	r, err := s.SearchNodes(ctx, &pb.Node{})
+	if err != nil {
+		t.Errorf("SearchNodes() should not have failed: %s", err.Error())
+	}
+
+	targetID := s.r.Nodes()[0].ID()
+	n := &pb.Node{}
+
+	/*
+		n.Reset()
+		n.Id = targetID
+		r, err = s.SearchNodes(ctx, n)
+		if err != nil {
+			t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
+		}
+		if len(r.Nodes) != 1 {
+			if len(r.Nodes) == 0 {
+				t.Errorf("SearchNodes(ctx, %#v) failed to return any results.", n)
+			} else {
+				t.Errorf("SearchNodes(ctx, %#v) returned to many results: %+v", n, r.Nodes)
+			}
+		} else {
+			if r.Nodes[0].Id != targetID {
+				t.Errorf("SearchNodes(ctx, %#v) failed to return expected ring entry got: %+v", n, r.Nodes)
+			}
+		}
+	*/
+
+	n.Reset()
+	n.Meta = "server1"
+	r, err = s.SearchNodes(ctx, n)
+	if err != nil {
+		t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
+	}
+	if len(r.Nodes) != 1 {
+		if len(r.Nodes) == 0 {
+			t.Errorf("SearchNodes(ctx, %#v) failed to return any results.", n)
+		} else {
+			t.Errorf("SearchNodes(ctx, %#v) returned to many results: %+v", n, r.Nodes)
+		}
+	} else {
+		if r.Nodes[0].Id != targetID {
+			t.Errorf("SearchNodes(ctx, %#v) failed to return expected ring entry got: %+v", n, r.Nodes)
+		}
+	}
+
+	n.Reset()
+	n.Tiers = append(n.Tiers, s.r.Nodes()[0].Tier(0))
+	r, err = s.SearchNodes(ctx, n)
+	if err != nil {
+		t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
+	}
+	if len(r.Nodes) != 1 {
+		if len(r.Nodes) == 0 {
+			t.Errorf("SearchNodes(ctx, %#v) failed to return any results.", n)
+		} else {
+			t.Errorf("SearchNodes(ctx, %#v) returned to many results: %+v", n, r.Nodes)
+		}
+	} else {
+		if r.Nodes[0].Id != targetID {
+			t.Errorf("SearchNodes(ctx, %#v) failed to return expected ring entry got: %+v", n, r.Nodes)
+		}
+	}
+
+	n.Reset()
+	n.Addresses = append(n.Addresses, s.r.Nodes()[0].Address(0))
+	r, err = s.SearchNodes(ctx, n)
+	if err != nil {
+		t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
+	}
+	if len(r.Nodes) != 1 {
+		if len(r.Nodes) == 0 {
+			t.Errorf("SearchNodes(ctx, %#v) failed to return any results.", n)
+		} else {
+			t.Errorf("SearchNodes(ctx, %#v) returned to many results: %+v", n, r.Nodes)
+		}
+	} else {
+		if r.Nodes[0].Id != targetID {
+			t.Errorf("SearchNodes(ctx, %#v) failed to return expected ring entry got: %+v", n, r.Nodes)
+		}
+	}
+
+	//this should return two hits:
+	n.Reset()
+	n.Meta = "dummy1.*|server1.*"
+	r, err = s.SearchNodes(ctx, n)
+	if err != nil {
+		t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
+	}
+	if len(r.Nodes) != 2 {
+		t.Errorf("SearchNodes(ctx, %#v) failed to return 2 results, got: %+v", n, r.Nodes)
+	}
+
+	//this should return 0 hits
+	n.Reset()
+	n.Id = 42
+	n.Meta = "nope"
+	r, err = s.SearchNodes(ctx, n)
+	if err != nil {
+		t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
+	}
+	if len(r.Nodes) != 0 {
+		t.Errorf("SearchNodes(ctx, %#v) should have returned any results but got: %+v", n, r.Nodes)
+	}
 }
 
 func TestServer_GetNodeConfig(t *testing.T) {
+	s, _ := newTestServerWithDefaults()
+	ctx := context.Background()
+
+	n := &pb.Node{Id: 42}
+	_, err := s.GetNodeConfig(ctx, n)
+	if err == nil {
+		t.Errorf("GetNodeConfig(ctx, %#v) should have failed as not found.", n)
+	}
+
+	n = &pb.Node{Id: s.r.Nodes()[0].ID()}
+	r, err := s.GetNodeConfig(ctx, n)
+	if err != nil {
+		t.Errorf("GetNodeConfig(ctx, %#v) should not have failed: %s", n, err.Error())
+	}
+	if !bytes.Equal(r.Conf.Conf, s.r.Nodes()[0].Conf()) {
+		t.Errorf("GetNodeConfig(ctx, %#v) returned wrong config: %#v", n, r.Conf)
+	}
 }
 
 func TestServer_GetRing(t *testing.T) {
@@ -205,8 +439,9 @@ func TestServer_GetRing(t *testing.T) {
 }
 
 func TestServer_RegisterNode(t *testing.T) {
-	s, _ := newTestServerWithDefaults()
+	s, m := newTestServerWithDefaults()
 	ctx := context.Background()
+
 	badRequests := map[string]*pb.RegisterRequest{
 		"Bad Network Interface": &pb.RegisterRequest{
 			Hostname: "badnetiface.test.com",
@@ -378,6 +613,37 @@ func TestServer_RegisterNode(t *testing.T) {
 		t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) missing a entry by addr (%v) or meta (%v)", validRequest, r, err.Error(), nodesbyaddr, nodesbymeta)
 	}
 
+	//load builder failure
+	m.buildererr = fmt.Errorf("Can't even")
+	validRequest.Reset()
+	validRequest = &pb.RegisterRequest{
+		Hostname: "server6",
+		Addrs:    []string{"10.0.0.6/32", "127.0.0.1/32"},
+		Tiers:    []string{"server6", "zone6"},
+	}
+	_, err = s.RegisterNode(ctx, validRequest)
+	if err == nil {
+		t.Error("RegisterNode should have failed due to load builder error")
+	}
+	m.buildererr = nil
+
+	//persist failure
+	m.persistBuilderErr = fmt.Errorf("Can't even")
+	validRequest.Reset()
+	validRequest = &pb.RegisterRequest{
+		Hostname: "server7",
+		Addrs:    []string{"10.0.0.7/32", "127.0.0.1/32"},
+		Tiers:    []string{"server7", "zone7"},
+	}
+	oldVersion := s.r.Version()
+	r, err = s.RegisterNode(ctx, validRequest)
+	if err == nil {
+		t.Error("RegisterNode should have failed due to persist builder error")
+	}
+	if s.r.Version() != oldVersion {
+		t.Errorf("RegisterNode should have failed due to persist builder error. Ring was modified")
+	}
+
 }
 
 func TestParseSlaveAddrs(t *testing.T) {
@@ -389,6 +655,52 @@ func TestParseSlaveAddrs(t *testing.T) {
 }
 
 func TestServer_ParseConfig(t *testing.T) {
+	b := ring.NewBuilder(64)
+	b.SetReplicaCount(3)
+	b.AddNode(true, 1, []string{"server1", "zone1"}, []string{"1.2.3.4:56789"}, "server1|meta one", []byte("Conf Thing1"))
+	b.AddNode(true, 1, []string{"dummy1", "zone42"}, []string{"1.42.42.42:56789"}, "dummy1|meta one", []byte("Dummy Conf"))
+	ring := b.Ring()
+
+	rbytes := []byte("imnotaring")
+	bbytes := []byte("imnotbuilder")
+	mock := &MockRingBuilderThings{
+		builderPath:  "/tmp/test.builder",
+		ringPath:     "/tmp/test.ring",
+		ring:         ring,
+		ringbytes:    &rbytes,
+		builder:      b,
+		builderbytes: &bbytes,
+		managedNodes: make(map[uint64]ManagedNode, 0),
+		slaves:       make([]*RingSlave, 0),
+		changeChan:   make(chan *changeMsg, 1),
+	}
+	s := newTestServer(&Config{}, "test", mock)
+	s.parseConfig()
+
+	if s.cfg.NetFilter == nil {
+		t.Errorf("Failed to set default NetFilter")
+	}
+	if s.cfg.TierFilter == nil {
+		t.Errorf("Failed to set default TierFilter")
+	}
+	if s.cfg.Port != DefaultPort {
+		t.Errorf("Failed to set default Port: %#v", s.cfg.Port)
+	}
+	if s.cfg.MsgRingPort != DefaultMsgRingPort {
+		t.Errorf("Failed to set default MsgRingPort: %#v", s.cfg.MsgRingPort)
+	}
+	if s.cfg.CmdCtrlPort != DefaultCmdCtrlPort {
+		t.Errorf("Failed to set default CmdCtrlPort: %#v", s.cfg.CmdCtrlPort)
+	}
+	if s.cfg.RingDir != filepath.Join(DefaultRingDir, s.servicename) {
+		t.Errorf("Failed to set default RingDir: %#v", s.cfg.RingDir)
+	}
+	if s.cfg.CertFile != DefaultCertFile {
+		t.Errorf("Failed to set default CertFile: %#v", s.cfg.CertFile)
+	}
+	if s.cfg.KeyFile != DefaultCertKey {
+		t.Errorf("Failed to set default KeyFile: %#v", s.cfg.KeyFile)
+	}
 }
 
 func TestServer_LoadRingBuilderBytes(t *testing.T) {
