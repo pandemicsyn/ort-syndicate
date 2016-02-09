@@ -18,19 +18,20 @@ import (
 const (
 	_SYN_REGISTER_TIMEOUT = 4
 	_SYN_DIAL_TIMEOUT     = 2
-	DefaultPort           = 8443
-	DefaultCmdCtrlPort    = 4443
-	DefaultMsgRingPort    = 8001
-	DefaultRingDir        = "/etc/oort/ring"
-	DefaultCertFile       = "/etc/oort/server.crt"
-	DefaultCertKey        = "/etc/oort/server.key"
+	DefaultPort           = 8443                   //The default port to use for the main backend service
+	DefaultCmdCtrlPort    = 4443                   //The default port to use for cmdctrl (address0)
+	DefaultMsgRingPort    = 8001                   //The default port the TCPMsgRing should use (address1)
+	DefaultRingDir        = "/etc/oort/ring"       //The default directory where to store the rings
+	DefaultCertFile       = "/etc/oort/server.crt" //The default SSL Cert
+	DefaultCertKey        = "/etc/oort/server.key" //The default SSL Key
 )
 
 var (
-	DefaultNetFilter  = []string{"10.0.0.0/8", "192.168.0.0/16"} //need to pull from conf
-	DefaultTierFilter = []string{".*"}
+	DefaultNetFilter  = []string{"10.0.0.0/8", "192.168.0.0/16"} //Default the netfilters to private networks
+	DefaultTierFilter = []string{".*"}                           //Default to ...anything
 )
 
+//Config options for syndicate manager
 type Config struct {
 	Master           bool
 	Slaves           []string
@@ -56,6 +57,7 @@ func parseSlaveAddrs(slaveAddrs []string) []*RingSlave {
 	return slaves
 }
 
+//Server is the syndicate manager instance
 type Server struct {
 	sync.RWMutex
 	servicename  string
@@ -76,27 +78,32 @@ type Server struct {
 	getBuilderFn func(path string) (*ring.Builder, error)
 }
 
-type SyndicateMockOpt func(*Server)
+//MockOpt is just used for testing
+type MockOpt func(*Server)
 
-func WithRingBuilderPersister(p func(c *RingChange, renameMaster bool) (error, error)) SyndicateMockOpt {
+//WithRingBuilderPersister is used for testing/mocking
+func WithRingBuilderPersister(p func(c *RingChange, renameMaster bool) (error, error)) MockOpt {
 	return func(s *Server) {
 		s.rbPersistFn = p
 	}
 }
 
-func WithRingBuilderBytesLoader(l func(path string) ([]byte, error)) SyndicateMockOpt {
+//WithRingBuilderBytesLoader is used for testing/mocking
+func WithRingBuilderBytesLoader(l func(path string) ([]byte, error)) MockOpt {
 	return func(s *Server) {
 		s.rbLoaderFn = l
 	}
 }
 
-func WithGetBuilderFn(l func(path string) (*ring.Builder, error)) SyndicateMockOpt {
+//WithGetBuilderFn is used for testing/mocking
+func WithGetBuilderFn(l func(path string) (*ring.Builder, error)) MockOpt {
 	return func(s *Server) {
 		s.getBuilderFn = l
 	}
 }
 
-func NewServer(cfg *Config, servicename string, opts ...SyndicateMockOpt) (*Server, error) {
+//NewServer returns a new instance of an up and running syndicate mangement node
+func NewServer(cfg *Config, servicename string, opts ...MockOpt) (*Server, error) {
 	var err error
 	s := new(Server)
 	s.cfg = cfg
@@ -217,6 +224,11 @@ type RingChange struct {
 	v int64
 }
 
+//ringBuilderPersisterFn is the default ring & builder persistence method used when a ring change is triggered.
+// It writes out first the builder file THEN the ring file. If the write of the builder file fails it immediately
+// returns an error. By default it writes changes to version-servicename.{builder|ring}. If renameMaster is true
+// it will instead write directly to servicename.{builder|ring}
+// TODO: if renameMaster is true we should just write to a tmp file and mv in place or the like
 func (s *Server) ringBuilderPersisterFn(c *RingChange, renameMaster bool) (error, error) {
 	//Write Ring/Builder out to versioned file names
 	if !renameMaster {
@@ -227,21 +239,20 @@ func (s *Server) ringBuilderPersisterFn(c *RingChange, renameMaster bool) (error
 			return nil, err
 		}
 		return nil, nil
-	} else {
-		//Write Ring/Builder out to plain servicename.ring and servicename.builder files
-		if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename)); err != nil {
-			log.Println("Unable to persist builder!")
-			return err, nil
-		}
-		if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%s.ring", s.cfg.RingDir, s.servicename)); err != nil {
-			log.Println("Unable to persist ring!")
-			return nil, err
-		}
-		return nil, nil
 	}
-
+	//Write Ring/Builder out to plain servicename.ring and servicename.builder files
+	if err := ring.PersistRingOrBuilder(nil, c.b, fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename)); err != nil {
+		log.Println("Unable to persist builder!")
+		return err, nil
+	}
+	if err := ring.PersistRingOrBuilder(c.r, nil, fmt.Sprintf("%s/%s.ring", s.cfg.RingDir, s.servicename)); err != nil {
+		log.Println("Unable to persist ring!")
+		return nil, err
+	}
+	return nil, nil
 }
 
+//applyRingChange attempts to actually apply and persist the disk the given ring change.
 func (s *Server) applyRingChange(c *RingChange) error {
 	builderErr, ringErr := s.rbPersistFn(c, false)
 	if builderErr != nil {
@@ -252,7 +263,6 @@ func (s *Server) applyRingChange(c *RingChange) error {
 		log.Println("Error persisting ring")
 		return ringErr
 	}
-
 	newRB, newBB, err := s.loadRingBuilderBytes(c.v)
 	if err != nil {
 		return fmt.Errorf("Failed to load new ring/builder bytes: %s", err)
@@ -271,8 +281,8 @@ func (s *Server) applyRingChange(c *RingChange) error {
 	return nil
 }
 
-// TODO: Need field/value error checks
-// Not used by anything.
+//AddNode not currently used by anything.
+//TODO: Need field/value error checks
 func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
@@ -308,16 +318,22 @@ func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) 
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
+//getBuilder loads a builder from disk
 func (s *Server) getBuilder(path string) (*ring.Builder, error) {
 	_, b, err := ring.RingOrBuilder(path)
 	return b, err
 }
 
+//getRing loads a ring from disk
 func (s *Server) getRing(path string) (ring.Ring, error) {
 	r, _, err := ring.RingOrBuilder(path)
 	return r, err
 }
 
+//RemoveNode removes a node given node to the ring. If any errors are encountered
+//the ring change is discarded. The response RingStatus message should only have True
+//Status if the ring change succeeded. The active Ring Version at the end of the call
+//is always returned.
 func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
@@ -348,6 +364,10 @@ func (s *Server) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, er
 	return &pb.RingStatus{}, nil
 }
 
+//SetConf sets the Ring global config to the provided bytes. If any errors are encountered
+//the ring change is discarded. The response RingStatus message should only have True
+//Status if the ring change succeeded. The active Ring Version at the end of the call
+//is always returned.
 func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
@@ -370,18 +390,21 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
+// TODO: actually implement
 func (s *Server) SetActive(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
+// TODO: actually implement
 func (s *Server) GetVersion(c context.Context, n *pb.EmptyMsg) (*pb.RingStatus, error) {
 	s.RLock()
 	defer s.RUnlock()
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
+//GetGlobalConfig retrieves the current global config []bytes present in the ring
 func (s *Server) GetGlobalConfig(c context.Context, n *pb.EmptyMsg) (*pb.RingConf, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -392,26 +415,28 @@ func (s *Server) GetGlobalConfig(c context.Context, n *pb.EmptyMsg) (*pb.RingCon
 	return config, nil
 }
 
+//SearchNodes uses the ring's node Filter() method return all nodes
+//matching the provided filters. The filter options are currently limited too:
+//id~=, meta~=, tier~=, address~=
 func (s *Server) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	var filter []string
-
 	if n.Id != 0 {
 		filter = append(filter, fmt.Sprintf("id=%d", n.Id))
 	}
 	if n.Meta != "" {
-		filter = append(filter, fmt.Sprintf("meta~=%s.*", n.Meta))
+		filter = append(filter, fmt.Sprintf("meta~=%s", n.Meta))
 	}
 	if len(n.Tiers) > 0 {
 		for _, v := range n.Tiers {
-			filter = append(filter, fmt.Sprintf("tier~=%s.*", v))
+			filter = append(filter, fmt.Sprintf("tier~=%s", v))
 		}
 	}
 	if len(n.Addresses) > 0 {
 		for _, v := range n.Addresses {
-			filter = append(filter, fmt.Sprintf("address~=%s.*", v))
+			filter = append(filter, fmt.Sprintf("address~=%s", v))
 		}
 	}
 	log.Println("filter:", filter)
@@ -437,6 +462,7 @@ func (s *Server) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, e
 	return &pb.SearchResult{Nodes: res}, nil
 }
 
+//GetNodeConfig retrieves a specific nodes ring config []bytes or an error if the node is not found.
 func (s *Server) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -453,14 +479,15 @@ func (s *Server) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, err
 	return config, nil
 }
 
+//GetRing returns the current ring bytes and version
 func (s *Server) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
 	s.RLock()
 	defer s.RUnlock()
 	return &pb.Ring{Version: s.r.Version(), Ring: *s.rb}, nil
 }
 
-// validNodeIP verifies that the provided ip is not a loopback or multicast address
-// and checks whether the ip is in the configured network limits range.
+//validNodeIP verifies that the provided ip is not a loopback or multicast address
+//and checks whether the ip is in the configured network limits range.
 func (s *Server) validNodeIP(i net.IP) bool {
 	switch {
 	case i.IsLoopback():
@@ -477,7 +504,7 @@ func (s *Server) validNodeIP(i net.IP) bool {
 	return inRange
 }
 
-// tier0 must never already exist as a tier0 entry in the ring
+//tier0 must never already exist as a tier0 entry in the ring
 func (s *Server) validTiers(t []string) bool {
 	if len(t) == 0 {
 		return false
@@ -503,8 +530,8 @@ func (s *Server) validTiers(t []string) bool {
 	return true
 }
 
-// nodeInRing just checks to see if the hostname or addresses appear
-// in any existing entries meta or address fields.
+//nodeInRing just checks to see if the hostname or addresses appear
+//in any existing entries meta or address fields.
 func (s *Server) nodeInRing(hostname string, addrs []string) bool {
 	a := strings.Join(addrs, "|")
 	r, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", hostname)})

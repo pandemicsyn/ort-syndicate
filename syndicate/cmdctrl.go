@@ -246,10 +246,12 @@ func (s *Server) NotifyNodes() {
 	s.changeChan <- m
 }
 
+//RingChangeManager gets ring change messages from the change chan and handles
+//notifying all managed nodes.
 func (s *Server) RingChangeManager() {
 	for msg := range s.changeChan {
 		s.RLock()
-		for k, _ := range s.managedNodes {
+		for k := range s.managedNodes {
 			updated, err := s.managedNodes[k].RingUpdate(msg.rb, msg.v)
 			if err != nil {
 				if updated {
@@ -284,16 +286,15 @@ func (s *Server) removeManagedNode(nodeid uint64) {
 		s.Unlock()
 		return
 		//do something here
-	} else {
-		s.RUnlock()
-		return
 	}
+	s.RUnlock()
+	return
 }
 
 // TODO: remove me, test func
 func (s *Server) pingSweep() {
 	responses := make(map[string]string, len(s.managedNodes))
-	for k, _ := range s.managedNodes {
+	for k := range s.managedNodes {
 		_, msg, err := s.managedNodes[k].Ping()
 		if err != nil {
 			responses[s.managedNodes[k].Address()] = err.Error()
