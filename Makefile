@@ -13,7 +13,7 @@ deps:
 	go get -u github.com/pandemicsyn/cmdctrl/api
 
 test:
-	go test -v ./...
+	go test ./...
 
 build:
 	mkdir -p packaging/output

@@ -1,6 +1,7 @@
 package syndicate
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -29,6 +30,11 @@ const (
 var (
 	DefaultNetFilter  = []string{"10.0.0.0/8", "192.168.0.0/16"} //Default the netfilters to private networks
 	DefaultTierFilter = []string{".*"}                           //Default to ...anything
+)
+
+var (
+	InvalidTiers = errors.New("Invalid tiers provided")
+	InvalidAddrs = errors.New("No valid addresses provided")
 )
 
 //Config options for syndicate manager
@@ -371,8 +377,6 @@ func (s *Server) ModNode(c context.Context, n *pb.ModifyMsg) (*pb.RingStatus, er
 func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
-	log.Println("Got SetConf request")
-	log.Println(s.r.Version())
 	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
 	if err != nil {
 		log.Println("Unable to load builder for change:", err)
@@ -390,14 +394,127 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
-// TODO: actually implement
 func (s *Server) SetActive(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
 	s.Lock()
 	defer s.Unlock()
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	if err != nil {
+		log.Println("Unable to load builder for change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	node := b.Node(n.Id)
+	if node == nil {
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Node not found")
+	}
+	node.SetActive(n.Active)
+	newRing := b.Ring()
+	log.Println("Attempting to apply ring version:", newRing.Version())
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
+	if err != nil {
+		log.Println("Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	log.Println("Ring version is now:", s.r.Version())
 	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
 }
 
-// TODO: actually implement
+func (s *Server) SetCapacity(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
+	s.Lock()
+	defer s.Unlock()
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	if err != nil {
+		log.Println("Unable to load builder for change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	node := b.Node(n.Id)
+	if node == nil {
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Node not found")
+	}
+	node.SetCapacity(n.Capacity)
+	newRing := b.Ring()
+	log.Println("Attempting to apply ring version:", newRing.Version())
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
+	if err != nil {
+		log.Println("Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	log.Println("Ring version is now:", s.r.Version())
+	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
+}
+
+//ReplaceTiers explicitly sets a node to the provided tiers. NO validation is performed
+// on the tiers provided and the address is NOT checked against the TierFilter list.
+func (s *Server) ReplaceTiers(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	if err != nil {
+		log.Println("Unable to load builder for change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	node := b.Node(n.Id)
+	if node == nil {
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Node not found")
+	}
+	if len(n.Tiers) == 0 {
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("No tiers provided")
+	}
+	node.ReplaceTiers(n.Tiers)
+	newRing := b.Ring()
+	log.Println("Attempting to apply ring version:", newRing.Version())
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
+	if err != nil {
+		log.Println("Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	log.Println("Ring version is now:", s.r.Version())
+	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
+}
+
+//ReplaceAddresses explicitly sets a node to the provided addresses. NO validation is performed
+// on the addresses provided and the address is NOT checked against the NetFilter list.
+// The only check performed is to verify that the address(s) are not in use on another ring entry.
+func (s *Server) ReplaceAddresses(c context.Context, n *pb.Node) (*pb.RingStatus, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	if len(n.Addresses) == 0 {
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("No addrs provided")
+	}
+	a := strings.Join(n.Addresses, "|")
+	addrnodes, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("address~=%s", a)})
+
+	if len(addrnodes) != 0 {
+		if len(addrnodes) > 1 {
+			return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Address already in ring/unable to verify ID (too many matches)")
+		}
+		if addrnodes[0].ID() != n.Id {
+			return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Address already in ring for other ID")
+		}
+	}
+
+	b, err := s.getBuilderFn(fmt.Sprintf("%s/%s.builder", s.cfg.RingDir, s.servicename))
+	if err != nil {
+		log.Println("Unable to load builder for change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	node := b.Node(n.Id)
+	if node == nil {
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, fmt.Errorf("Node not found")
+	}
+	node.ReplaceAddresses(n.Addresses)
+	newRing := b.Ring()
+	log.Println("Attempting to apply ring version:", newRing.Version())
+	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
+	if err != nil {
+		log.Println("Failed to apply ring change:", err)
+		return &pb.RingStatus{Status: false, Version: s.r.Version()}, err
+	}
+	log.Println("Ring version is now:", s.r.Version())
+	return &pb.RingStatus{Status: true, Version: s.r.Version()}, nil
+}
+
 func (s *Server) GetVersion(c context.Context, n *pb.EmptyMsg) (*pb.RingStatus, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -568,8 +685,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	}
 	switch {
 	case len(addrs) == 0:
-		log.Println("Host provided no valid addresses during registration.")
-		return &pb.NodeConfig{}, fmt.Errorf("No valid addresses provided")
+		return &pb.NodeConfig{}, InvalidAddrs
 	case s.nodeInRing(r.Hostname, addrs):
 		a := strings.Join(addrs, "|")
 		metanodes, _ := s.r.Nodes().Filter([]string{fmt.Sprintf("meta~=%s.*", r.Hostname)})
@@ -597,7 +713,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		log.Println("Node already in ring, sending localid:", addrid)
 		return &pb.NodeConfig{Localid: addrid, Ring: *s.rb}, nil
 	case !s.validTiers(r.Tiers):
-		return &pb.NodeConfig{}, fmt.Errorf("Invalid tiers provided")
+		return &pb.NodeConfig{}, InvalidTiers
 	}
 
 	var weight uint32
@@ -608,22 +724,38 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		weight = 1000
 		nodeEnabled = true
 	case "self":
-		log.Println("SELF weight assignment strategy no longer implemented!")
-		weight = 1000
+		if r.Hardware == nil {
+			return &pb.NodeConfig{}, fmt.Errorf("No hardware profile provided but required")
+		}
+		if len(r.Hardware.Disks) == 0 {
+			return &pb.NodeConfig{}, fmt.Errorf("No disks in hardware profile")
+		}
+		weight = ExtractCapacity("/data", r.Hardware.Disks)
 		nodeEnabled = true
 	case "manual":
-		weight = 0
+		if r.Hardware == nil {
+			return &pb.NodeConfig{}, fmt.Errorf("No hardware profile provided but required")
+		}
+		if len(r.Hardware.Disks) == 0 {
+			return &pb.NodeConfig{}, fmt.Errorf("No disks in hardware profile")
+		}
+		weight = ExtractCapacity("/data", r.Hardware.Disks)
 		nodeEnabled = false
 	default:
 		log.Println("No weight assignment strategy specified, adding unconfigured node!")
-		weight = 0
+		if r.Hardware == nil {
+			return &pb.NodeConfig{}, fmt.Errorf("No hardware profile provided but required")
+		}
+		if len(r.Hardware.Disks) == 0 {
+			return &pb.NodeConfig{}, fmt.Errorf("No disks in hardware profile")
+		}
+		weight = ExtractCapacity("/data", r.Hardware.Disks)
 		nodeEnabled = false
 	}
-	n, err := b.AddNode(nodeEnabled, weight, r.Tiers, addrs, fmt.Sprintf("%s|%s", r.Hostname, r.Hardwareid), []byte(""))
+	n, err := b.AddNode(nodeEnabled, weight, r.Tiers, addrs, r.Hostname, []byte(""))
 	if err != nil {
 		return &pb.NodeConfig{}, err
 	}
-
 	report := [][]string{
 		[]string{"ID:", fmt.Sprintf("%016x", n.ID())},
 		[]string{"RAW ID", fmt.Sprintf("%d", n.ID())},

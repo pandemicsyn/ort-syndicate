@@ -8,13 +8,22 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gholt/ring"
 	pb "github.com/pandemicsyn/syndicate/api/proto"
 	"golang.org/x/net/context"
 )
+
+func invert(a bool) bool {
+	if a {
+		return false
+	}
+	return true
+}
 
 type MockRingBuilderThings struct {
 	builderPath       string
@@ -163,6 +172,101 @@ func TestServer_AddNode(t *testing.T) {
 	m.persistBuilderErr = nil
 }
 
+func TestServer_ReplaceAddresses(t *testing.T) {
+	s, m := newTestServerWithDefaults()
+	ctx := context.Background()
+
+	id := s.r.Nodes()[1].ID()
+	origVersion := s.r.Version()
+	var addrs []string
+
+	addrs = append(addrs, fmt.Sprintf("%d", time.Now().UnixNano()))
+	n := &pb.Node{Id: id, Addresses: addrs}
+	r, err := s.ReplaceAddresses(ctx, n)
+	if err != nil {
+		t.Errorf("ReplaceAddresses(ctx, %#v) should not have returned error: %s", n, err.Error())
+	}
+	if r.Status != true || r.Version == origVersion {
+		t.Errorf("ReplaceAddresses(ctx, %#v) SHOULD have changed ring: %#v", n, r)
+	}
+	if !reflect.DeepEqual(addrs, s.r.Node(id).Addresses()) {
+		t.Errorf("ReplaceAddresses(ctx, %#v) should have increased capacity", n)
+	}
+
+	//one of the addresses already exists in another node
+	n.Reset()
+	addrs = []string{}
+	origVersion = s.r.Version()
+	n.Id = id
+	addrs = append(addrs, fmt.Sprintf("%d", time.Now().UnixNano()))
+	addrs = append(addrs, s.r.Nodes()[0].Address(0))
+	n.Addresses = addrs
+	r, err = s.ReplaceAddresses(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceAddresses(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("ReplaceAddresses(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//empty addrs
+	n.Reset()
+	addrs = []string{}
+	origVersion = s.r.Version()
+	n.Id = id
+	n.Addresses = addrs
+	r, err = s.ReplaceAddresses(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceAddresses(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("ReplaceAddresses(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//nonexistent node
+	n.Reset()
+	addrs = append(addrs, fmt.Sprintf("%d", time.Now().UnixNano()))
+	origVersion = s.r.Version()
+	n.Id = 42
+	n.Addresses = addrs
+	r, err = s.ReplaceAddresses(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceAddresses(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("ReplaceAddresses(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//failures
+	n.Reset()
+	n.Id = id
+	addrs = append(addrs, fmt.Sprintf("%d", time.Now().UnixNano()))
+	n.Addresses = addrs
+	m.buildererr = fmt.Errorf("Can't even")
+	origVersion = s.r.Version()
+	r, err = s.ReplaceAddresses(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceAddresses(ctx, %#v) SHOULD have failed", n)
+	}
+	m.buildererr = nil
+
+	m.persistRingErr = fmt.Errorf("Can't even")
+	n.Reset()
+	n.Id = id
+	addrs = append(addrs, fmt.Sprintf("%d", time.Now().UnixNano()))
+	n.Addresses = addrs
+	origVersion = s.r.Version()
+	r, err = s.ReplaceAddresses(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceAddresses(ctx, %#v) should have failed: %s", n, err.Error())
+	} else {
+		if r.Version != origVersion || r.Status == true {
+			t.Errorf("ReplaceAddresses(ctx, %#v) SHOULD not have resulted in ring change: %#v", n, r)
+		}
+	}
+	m.persistRingErr = nil
+}
+
 func TestServer_RemoveNode(t *testing.T) {
 	s, m := newTestServerWithDefaults()
 	ctx := context.Background()
@@ -259,7 +363,224 @@ func TestServer_SetConf(t *testing.T) {
 }
 
 func TestServer_SetActive(t *testing.T) {
+	s, m := newTestServerWithDefaults()
+	ctx := context.Background()
 
+	id := s.r.Nodes()[1].ID()
+	origVersion := s.r.Version()
+
+	//disable node
+	n := &pb.Node{Id: id, Active: false}
+	r, err := s.SetActive(ctx, n)
+	if err != nil {
+		t.Errorf("SetActive(ctx, %#v) should not have returned error: %s", n, err.Error())
+	}
+	if r.Status != true || r.Version == origVersion {
+		t.Errorf("SetActive(ctx, %#v) SHOULD have changed ring: %#v", n, r)
+	}
+	if s.r.Node(id).Active() {
+		t.Errorf("SetActive(ctx, %#v) should be inactive now but wasn't", n)
+	}
+
+	//enable node
+	origVersion = s.r.Version()
+	n.Active = true
+	r, err = s.SetActive(ctx, n)
+	if err != nil {
+		t.Errorf("SetActive(ctx, %#v) should not have returned error: %s", n, err.Error())
+	}
+	if r.Status != true || r.Version == origVersion {
+		t.Errorf("SetActive(ctx, %#v) SHOULD have changed ring: %#v", n, r)
+	}
+	if !s.r.Node(id).Active() {
+		t.Errorf("SetActive(ctx, %#v) should be active now but wasn't", n)
+	}
+
+	//nonexistent node
+	n.Reset()
+	origVersion = s.r.Version()
+	n.Id = 42
+	n.Active = true
+	r, err = s.SetActive(ctx, n)
+	if err == nil {
+		t.Errorf("SetActive(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("SetActive(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//failures
+	n.Reset()
+	n.Id = id
+	n.Active = invert(s.r.Node(id).Active())
+	m.buildererr = fmt.Errorf("Can't even")
+	origVersion = s.r.Version()
+	r, err = s.SetActive(ctx, n)
+	if err == nil {
+		t.Errorf("SetActive(ctx, %#v) SHOULD have failed", n)
+	}
+	m.buildererr = nil
+
+	m.persistRingErr = fmt.Errorf("Can't even")
+	n.Reset()
+	n.Id = id
+	n.Active = invert(s.r.Node(id).Active())
+	origVersion = s.r.Version()
+	r, err = s.SetActive(ctx, n)
+	if err == nil {
+		t.Errorf("SetActive(ctx, %#v) should have failed: %s", n, err.Error())
+	} else {
+		if r.Version != origVersion || r.Status == true {
+			t.Errorf("SetActive(ctx, %#v) SHOULD not have resulted in ring change: %#v", n, r)
+		}
+	}
+	m.persistRingErr = nil
+
+}
+
+func TestServer_SetCapacity(t *testing.T) {
+	s, m := newTestServerWithDefaults()
+	ctx := context.Background()
+
+	id := s.r.Nodes()[1].ID()
+	origVersion := s.r.Version()
+	var cap uint32
+
+	cap = s.r.Node(id).Capacity() + 1
+	n := &pb.Node{Id: id, Capacity: cap}
+	r, err := s.SetCapacity(ctx, n)
+	if err != nil {
+		t.Errorf("SetCapacity(ctx, %#v) should not have returned error: %s", n, err.Error())
+	}
+	if r.Status != true || r.Version == origVersion {
+		t.Errorf("SetCapacity(ctx, %#v) SHOULD have changed ring: %#v", n, r)
+	}
+	if s.r.Node(id).Capacity() != cap {
+		t.Errorf("SetCapacity(ctx, %#v) should have increased capacity", n)
+	}
+
+	//nonexistent node
+	n.Reset()
+	origVersion = s.r.Version()
+	n.Id = 42
+	n.Capacity = 1
+	r, err = s.SetCapacity(ctx, n)
+	if err == nil {
+		t.Errorf("SetCapacity(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("SetCapacity(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//failures
+	n.Reset()
+	n.Id = id
+	cap = s.r.Node(id).Capacity() + 1
+	n.Capacity = cap
+	m.buildererr = fmt.Errorf("Can't even")
+	origVersion = s.r.Version()
+	r, err = s.SetCapacity(ctx, n)
+	if err == nil {
+		t.Errorf("SetCapacity(ctx, %#v) SHOULD have failed", n)
+	}
+	m.buildererr = nil
+
+	m.persistRingErr = fmt.Errorf("Can't even")
+	n.Reset()
+	n.Id = id
+	cap = s.r.Node(id).Capacity() + 1
+	n.Capacity = cap
+	origVersion = s.r.Version()
+	r, err = s.SetCapacity(ctx, n)
+	if err == nil {
+		t.Errorf("SetCapacity(ctx, %#v) should have failed: %s", n, err.Error())
+	} else {
+		if r.Version != origVersion || r.Status == true {
+			t.Errorf("SetCapacity(ctx, %#v) SHOULD not have resulted in ring change: %#v", n, r)
+		}
+	}
+	m.persistRingErr = nil
+}
+
+func TestServer_ReplaceTiers(t *testing.T) {
+	s, m := newTestServerWithDefaults()
+	ctx := context.Background()
+
+	id := s.r.Nodes()[1].ID()
+	origVersion := s.r.Version()
+	var tiers []string
+
+	tiers = append(tiers, fmt.Sprintf("%d", time.Now().UnixNano()))
+	n := &pb.Node{Id: id, Tiers: tiers}
+	r, err := s.ReplaceTiers(ctx, n)
+	if err != nil {
+		t.Errorf("ReplaceTiers(ctx, %#v) should not have returned error: %s", n, err.Error())
+	}
+	if r.Status != true || r.Version == origVersion {
+		t.Errorf("ReplaceTiers(ctx, %#v) SHOULD have changed ring: %#v", n, r)
+	}
+	if !reflect.DeepEqual(tiers, s.r.Node(id).Tiers()) {
+		fmt.Printf("T: %#v\n", tiers)
+		fmt.Printf("T: %#v\n", s.r.Node(id).Tiers())
+		t.Errorf("ReplaceTiers(ctx, %#v) should have increased capacity", n)
+	}
+
+	//empty tiers
+	n.Reset()
+	tiers = []string{}
+	origVersion = s.r.Version()
+	n.Id = id
+	n.Tiers = tiers
+	r, err = s.ReplaceTiers(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceTiers(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("ReplaceTiers(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//nonexistent node
+	n.Reset()
+	tiers = append(tiers, fmt.Sprintf("%d", time.Now().UnixNano()))
+	origVersion = s.r.Version()
+	n.Id = 42
+	n.Tiers = tiers
+	r, err = s.ReplaceTiers(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceTiers(ctx, %#v) SHOULD  have returned error: %s", n, err.Error())
+	}
+	if r.Status || r.Version != origVersion {
+		t.Errorf("ReplaceTiers(ctx, %#v) should not have changed ring: %#v", n, r)
+	}
+
+	//failures
+	n.Reset()
+	n.Id = id
+	tiers = append(tiers, fmt.Sprintf("%d", time.Now().UnixNano()))
+	n.Tiers = tiers
+	m.buildererr = fmt.Errorf("Can't even")
+	origVersion = s.r.Version()
+	r, err = s.ReplaceTiers(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceTiers(ctx, %#v) SHOULD have failed", n)
+	}
+	m.buildererr = nil
+
+	m.persistRingErr = fmt.Errorf("Can't even")
+	n.Reset()
+	n.Id = id
+	tiers = append(tiers, fmt.Sprintf("%d", time.Now().UnixNano()))
+	n.Tiers = tiers
+	origVersion = s.r.Version()
+	r, err = s.ReplaceTiers(ctx, n)
+	if err == nil {
+		t.Errorf("ReplaceTiers(ctx, %#v) should have failed: %s", n, err.Error())
+	} else {
+		if r.Version != origVersion || r.Status == true {
+			t.Errorf("ReplaceTiers(ctx, %#v) SHOULD not have resulted in ring change: %#v", n, r)
+		}
+	}
+	m.persistRingErr = nil
 }
 
 func TestServer_GetVersion(t *testing.T) {
@@ -269,7 +590,7 @@ func TestServer_GetVersion(t *testing.T) {
 
 	r, err := s.GetVersion(ctx, empty)
 	if err != nil {
-		t.Errorf("GetVersion() should not have rerturned an error: %s", err.Error())
+		t.Errorf("GetVersion() should not have returned an error: %s", err.Error())
 	}
 
 	if r.Version != m.ring.Version() {
@@ -301,26 +622,6 @@ func TestServer_SearchNodes(t *testing.T) {
 
 	targetID := s.r.Nodes()[0].ID()
 	n := &pb.Node{}
-
-	/*
-		n.Reset()
-		n.Id = targetID
-		r, err = s.SearchNodes(ctx, n)
-		if err != nil {
-			t.Errorf("SearchNodes(ctx, %#v) should not have failed: %s", n, err.Error())
-		}
-		if len(r.Nodes) != 1 {
-			if len(r.Nodes) == 0 {
-				t.Errorf("SearchNodes(ctx, %#v) failed to return any results.", n)
-			} else {
-				t.Errorf("SearchNodes(ctx, %#v) returned to many results: %+v", n, r.Nodes)
-			}
-		} else {
-			if r.Nodes[0].Id != targetID {
-				t.Errorf("SearchNodes(ctx, %#v) failed to return expected ring entry got: %+v", n, r.Nodes)
-			}
-		}
-	*/
 
 	n.Reset()
 	n.Meta = "server1"
@@ -442,21 +743,31 @@ func TestServer_RegisterNode(t *testing.T) {
 	s, m := newTestServerWithDefaults()
 	ctx := context.Background()
 
+	okHwProfile := &pb.HardwareProfile{
+		Cpus:     0,
+		Memfree:  1000,
+		Memtotal: 1000,
+		Disks:    []*pb.Disk{&pb.Disk{Path: "/data", Size: 1000000}},
+	}
+
 	badRequests := map[string]*pb.RegisterRequest{
 		"Bad Network Interface": &pb.RegisterRequest{
 			Hostname: "badnetiface.test.com",
 			Addrs:    []string{"127.0.0.1/32", "192.168.2.2/32"},
 			Tiers:    []string{"badnetiface.test.com", "zone1"},
+			Hardware: okHwProfile,
 		},
 		"Duplicate server name and addr": &pb.RegisterRequest{
 			Hostname: "server1",
 			Addrs:    []string{"1.2.3.4/32", "127.0.0.1/32", "192.168.2.2/32"},
 			Tiers:    []string{"server1", "zone1"},
+			Hardware: okHwProfile,
 		},
 		"Bad tier": &pb.RegisterRequest{
 			Hostname: "server42",
 			Addrs:    []string{"10.0.0.42/32", "127.0.0.1/32", "192.168.2.2/32"},
 			Tiers:    []string{""},
+			Hardware: okHwProfile,
 		},
 	}
 
@@ -472,6 +783,7 @@ func TestServer_RegisterNode(t *testing.T) {
 		Hostname: "server2",
 		Addrs:    []string{"10.0.0.2/32", "127.0.0.1/32"},
 		Tiers:    []string{"server2", "zone2"},
+		Hardware: okHwProfile,
 	}
 	r, err := s.RegisterNode(ctx, validRequest)
 	if err != nil {
@@ -560,6 +872,7 @@ func TestServer_RegisterNode(t *testing.T) {
 		Hostname: "server4",
 		Addrs:    []string{"10.0.0.4/32", "127.0.0.1/32"},
 		Tiers:    []string{"server4", "zone4"},
+		Hardware: okHwProfile,
 	}
 	r, err = s.RegisterNode(ctx, validRequest)
 	if err != nil {
@@ -575,7 +888,7 @@ func TestServer_RegisterNode(t *testing.T) {
 			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
 		} else {
 			//verify default weight assignment
-			if nodesbyaddr[0].Capacity() != 1000 || nodesbyaddr[0].Active() != true {
+			if nodesbyaddr[0].Capacity() != uint32(okHwProfile.Disks[0].Size/1024/1024/1024) || nodesbyaddr[0].Active() != true {
 				t.Errorf("RegisterNodes weight assignment strategy is self but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
 			}
 		}
@@ -590,6 +903,7 @@ func TestServer_RegisterNode(t *testing.T) {
 		Hostname: "server5",
 		Addrs:    []string{"10.0.0.5/32", "127.0.0.1/32"},
 		Tiers:    []string{"server5", "zone5"},
+		Hardware: okHwProfile,
 	}
 	r, err = s.RegisterNode(ctx, validRequest)
 	if err != nil {
@@ -605,7 +919,7 @@ func TestServer_RegisterNode(t *testing.T) {
 			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
 		} else {
 			//verify default weight assignment
-			if nodesbyaddr[0].Capacity() != 0 || nodesbyaddr[0].Active() != false {
+			if nodesbyaddr[0].Capacity() != uint32(okHwProfile.Disks[0].Size/1024/1024/1024) || nodesbyaddr[0].Active() != false {
 				t.Errorf("RegisterNodes weight assignment strategy is manual but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
 			}
 		}
