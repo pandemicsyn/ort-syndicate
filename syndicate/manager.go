@@ -731,7 +731,11 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 			return &pb.NodeConfig{}, fmt.Errorf("No disks in hardware profile")
 		}
 		weight = ExtractCapacity("/data", r.Hardware.Disks)
-		nodeEnabled = true
+		if weight == 0 {
+			nodeEnabled = false
+		} else {
+			nodeEnabled = true
+		}
 	case "manual":
 		if r.Hardware == nil {
 			return &pb.NodeConfig{}, fmt.Errorf("No hardware profile provided but required")
