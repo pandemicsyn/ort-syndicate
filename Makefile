@@ -3,16 +3,11 @@ VERSION := $(shell cat VERSION)
 ITTERATION := $(shell date +%s)
 
 deps:
-	go get -u google.golang.org/grpc
-	go get -u github.com/golang/protobuf/proto
-	go get -u github.com/golang/protobuf/protoc-gen-go
-	go get -u github.com/gholt/ring
-	go get -u github.com/gholt/ring/ring
-	go get -u github.com/gholt/store
-	go get -u github.com/pandemicsyn/cmdctrl
-	go get -u github.com/pandemicsyn/cmdctrl/api
+	go get -u ./...
 
 test:
+	go get ./...
+	go test -i ./...
 	go test ./...
 
 build:
