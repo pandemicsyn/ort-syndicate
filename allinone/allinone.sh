@@ -152,6 +152,12 @@ go install github.com/creiht/formic/cfs
 cp -av $GOPATH/src/github.com/creiht/formic/packaging/root/usr/share/formicd/systemd/formicd.service /lib/systemd/system
 echo 'FORMICD_PORT=8445' > /etc/default/formicd
 
+echo "Installing cfswrap and setting up the mount command"
+go get github.com/creiht/formic/cfswrap
+go install github.com/creiht/formic/cfswrap
+ln -sf $GOPATH/bin/cfswrap /sbin/mount.cfs
+
+
 # Adding some helpful git stuff to the .bashrc 
 if [ "$FANCYPROMPT" = "yes" ]; then
     echo "" >> ~/.bashrc
@@ -186,9 +192,9 @@ echo "systemctl start oort-groupd"
 echo "systemctl start formicd"
 echo "!! Don't forget to remove the place holder nodes from the ring once you've started your nodes"
 echo ""
-echo "For example: to create a cfsfuse mount point create the location and run cfs:"
-echo "mkdir -p /mnt/cfs"
-echo "cfs -host localhost:8445 /mnt/cfs"
+echo "For example: to create a cfsfuse mount point create the location and run the mount command:"
+echo "mkdir -p /mnt/fsdrive"
+echo "mount -t cfs  iad3://cfsteam/allinone/ /mnt/fsdrive -o host=localhost:8445"
 echo ""
 echo "If you plan on using *THIS* session and to get the git enhanced prompt make sure to source ~/.bashrc to load path changes"
 
