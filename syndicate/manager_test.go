@@ -336,7 +336,7 @@ func TestServer_SetConf(t *testing.T) {
 	if r.Version == oldVersion || r.Status == false {
 		t.Errorf("SetConf(ctx, %#v) should have resulted in ring change: %#v", newConf, r)
 	}
-	if !bytes.Equal(s.r.Conf(), newConf.Conf) {
+	if !bytes.Equal(s.r.Config(), newConf.Conf) {
 		t.Errorf("SetConf(ctx, %#v) failed to actually update conf bytes", newConf)
 	}
 
@@ -607,8 +607,8 @@ func TestServer_GetGlobalConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetGlobalConfig() should not have rerturned an error: %s", err.Error())
 	}
-	if !bytes.Equal(r.Conf.Conf, m.builder.Conf()) {
-		t.Errorf("GetGlobalConfig() returned config: %#v expected %#v", r.Conf.Conf, m.builder.Conf())
+	if !bytes.Equal(r.Conf.Conf, m.builder.Config()) {
+		t.Errorf("GetGlobalConfig() returned config: %#v expected %#v", r.Conf.Conf, m.builder.Config())
 	}
 }
 
@@ -716,7 +716,7 @@ func TestServer_GetNodeConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetNodeConfig(ctx, %#v) should not have failed: %s", n, err.Error())
 	}
-	if !bytes.Equal(r.Conf.Conf, s.r.Nodes()[0].Conf()) {
+	if !bytes.Equal(r.Conf.Conf, s.r.Nodes()[0].Config()) {
 		t.Errorf("GetNodeConfig(ctx, %#v) returned wrong config: %#v", n, r.Conf)
 	}
 }
@@ -1022,7 +1022,7 @@ func TestServer_LoadRingBuilderBytes(t *testing.T) {
 
 func TestServer_RingBuilderPersisterFn(t *testing.T) {
 	s, m := newTestServerWithDefaults()
-	m.builder.SetConf([]byte("persisttest"))
+	m.builder.SetConfig([]byte("persisttest"))
 
 	change := &RingChange{
 		r: m.builder.Ring(),
@@ -1106,7 +1106,7 @@ func TestServer_ApplyRingChange(t *testing.T) {
 
 	s, m := newTestServerWithDefaults()
 
-	m.builder.SetConf([]byte("persisttest"))
+	m.builder.SetConfig([]byte("persisttest"))
 
 	change := &RingChange{
 		r: m.builder.Ring(),

@@ -310,7 +310,7 @@ func (s *Server) AddNode(c context.Context, e *pb.Node) (*pb.RingStatus, error) 
 		[]string{"Tiers:", strings.Join(n.Tiers(), "\n")},
 		[]string{"Addresses:", strings.Join(n.Addresses(), "\n")},
 		[]string{"Meta:", n.Meta()},
-		[]string{"Conf:", fmt.Sprintf("%s", n.Conf())},
+		[]string{"Conf:", fmt.Sprintf("%s", n.Config())},
 	}
 	log.Print(brimtext.Align(report, nil))
 	newRing := b.Ring()
@@ -382,7 +382,7 @@ func (s *Server) SetConf(c context.Context, conf *pb.Conf) (*pb.RingStatus, erro
 		log.Println("Unable to load builder for change:", err)
 		return &pb.RingStatus{}, err
 	}
-	b.SetConf(conf.Conf)
+	b.SetConfig(conf.Conf)
 	newRing := b.Ring()
 	log.Println("Attempting to apply ring version:", newRing.Version())
 	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
@@ -527,7 +527,7 @@ func (s *Server) GetGlobalConfig(c context.Context, n *pb.EmptyMsg) (*pb.RingCon
 	defer s.RUnlock()
 	config := &pb.RingConf{
 		Status: &pb.RingStatus{Status: true, Version: s.r.Version()},
-		Conf:   &pb.Conf{Conf: s.r.Conf(), RestartRequired: false},
+		Conf:   &pb.Conf{Conf: s.r.Config(), RestartRequired: false},
 	}
 	return config, nil
 }
@@ -573,7 +573,7 @@ func (s *Server) SearchNodes(c context.Context, n *pb.Node) (*pb.SearchResult, e
 			Tiers:     n.Tiers(),
 			Addresses: n.Addresses(),
 			Meta:      n.Meta(),
-			Conf:      n.Conf(),
+			Conf:      n.Config(),
 		}
 	}
 	return &pb.SearchResult{Nodes: res}, nil
@@ -590,7 +590,7 @@ func (s *Server) GetNodeConfig(c context.Context, n *pb.Node) (*pb.RingConf, err
 
 	config := &pb.RingConf{
 		Status: &pb.RingStatus{Status: true, Version: s.r.Version()},
-		Conf:   &pb.Conf{Conf: node.Conf(), RestartRequired: false},
+		Conf:   &pb.Conf{Conf: node.Config(), RestartRequired: false},
 	}
 	log.Println(config)
 	return config, nil
@@ -768,7 +768,7 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		[]string{"Tiers:", strings.Join(n.Tiers(), "\n")},
 		[]string{"Addresses:", strings.Join(n.Addresses(), "\n")},
 		[]string{"Meta:", n.Meta()},
-		[]string{"Conf:", fmt.Sprintf("%s", n.Conf())},
+		[]string{"Conf:", fmt.Sprintf("%s", n.Config())},
 	}
 	log.Print(brimtext.Align(report, nil))
 	newRing := b.Ring()
