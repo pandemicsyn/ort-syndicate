@@ -33,7 +33,7 @@ var (
 )
 
 var (
-	InvalidTiers = errors.New("Invalid tiers provided")
+	InvalidTiers = errors.New("Tier0 already present in ring")
 	InvalidAddrs = errors.New("No valid addresses provided")
 )
 
@@ -712,8 +712,13 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 		}
 		log.Println("Node already in ring, sending localid:", addrid)
 		return &pb.NodeConfig{Localid: addrid, Ring: *s.rb}, nil
-	case !s.validTiers(r.Tiers):
-		return &pb.NodeConfig{}, InvalidTiers
+	case len(r.Tiers) == 0:
+		return &pb.NodeConfig{}, fmt.Errorf("No tier0 provided")
+	case len(r.Tiers) > 0:
+		log.Println("wtf not even")
+		if !s.validTiers(r.Tiers) {
+			return &pb.NodeConfig{}, InvalidTiers
+		}
 	}
 
 	var weight uint32
