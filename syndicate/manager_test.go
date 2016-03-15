@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gholt/ring"
 	pb "github.com/pandemicsyn/syndicate/api/proto"
 	"golang.org/x/net/context"
@@ -88,7 +89,8 @@ func newTestServer(cfg *Config, servicename string, mockinfo *MockRingBuilderThi
 	s := &Server{}
 	s.cfg = cfg
 	s.servicename = servicename
-
+	logrus.SetLevel(logrus.WarnLevel)
+	s.ctxlog = logrus.WithField("service", s.servicename)
 	s.rbPersistFn = mockinfo.Persist
 	s.rbLoaderFn = mockinfo.BytesLoader
 	s.getBuilderFn = mockinfo.GetBuilder

@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"log"
 	"net"
 
 	"github.com/BurntSushi/toml"
+	log "github.com/Sirupsen/logrus"
 	pb "github.com/pandemicsyn/syndicate/api/proto"
 	"github.com/pandemicsyn/syndicate/syndicate"
 )
