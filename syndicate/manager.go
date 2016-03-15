@@ -208,7 +208,7 @@ func (s *Server) parseConfig() {
 	}
 	if s.cfg.StorePort == 0 {
 		s.ctxlog.Debugln("Config didn't specify store port, using default:", DefaultStorePort)
-		s.cfg.MsgRingPort = DefaultStorePort
+		s.cfg.StorePort = DefaultStorePort
 	}
 	if s.cfg.CmdCtrlPort == 0 {
 		s.ctxlog.Debugln("Config didn't specify cmdctrl port, using default:", DefaultCmdCtrlPort)
