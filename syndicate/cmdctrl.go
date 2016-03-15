@@ -3,11 +3,11 @@ package syndicate
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 	"sync"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gholt/ring"
 	cc "github.com/pandemicsyn/cmdctrl/api"
 	"golang.org/x/net/context"
@@ -30,21 +30,30 @@ func ParseManagedNodeAddress(addr string, port int) (string, error) {
 	return fmt.Sprintf("%s:%d", host, port), nil
 }
 
-func bootstrapManagedNodes(ring ring.Ring, ccport int, gopts ...grpc.DialOption) map[uint64]ManagedNode {
+func bootstrapManagedNodes(ring ring.Ring, ccport int, ctxlog *log.Entry, gopts ...grpc.DialOption) map[uint64]ManagedNode {
 	nodes := ring.Nodes()
 	m := make(map[uint64]ManagedNode, len(nodes))
 	for _, node := range nodes {
 		addr, err := ParseManagedNodeAddress(node.Address(0), ccport)
 		if err != nil {
-			log.Printf("Error bootstrapping node %d: unable to split address %s: %v", node.ID(), node.Address(0), err)
-			log.Println("Node NOT a managed node!")
+			ctxlog.WithFields(log.Fields{
+				"node":    node.ID(),
+				"address": node.Address(0),
+			}).Info("Can't split address in node (skipped node)")
 			continue
 		}
 		m[node.ID()], err = NewManagedNode(&ManagedNodeOpts{Address: addr, GrpcOpts: gopts})
 		if err != nil {
-			log.Printf("Error bootstrapping node %d: %v", node.ID(), err)
+			ctxlog.WithFields(log.Fields{
+				"node":    node.ID(),
+				"address": node.Address(0),
+				"err":     err,
+			}).Warning("Unable to bootstrap node")
 		} else {
-			log.Println("Added", node.ID(), "as managed node")
+			ctxlog.WithFields(log.Fields{
+				"node":    node.ID(),
+				"address": node.Address(0),
+			}).Debug("Added node")
 		}
 	}
 	return m
@@ -253,19 +262,12 @@ func (s *Server) RingChangeManager() {
 		s.RLock()
 		for k := range s.managedNodes {
 			updated, err := s.managedNodes[k].RingUpdate(msg.rb, msg.v)
-			if err != nil {
-				if updated {
-					log.Printf("RingUpdate of %d succeeded but reported error: %v", k, err)
-					continue
-				}
-				log.Printf("RingUpdate of %d failed: %v", k, err)
-				continue
+			if !updated || err != nil {
+				s.ctxlog.WithFields(log.Fields{"nodeid": k, "updated": updated, "err": err}).Warning("sent node ringupdate")
+			} else {
+				s.ctxlog.WithFields(log.Fields{"nodeid": k, "updated": updated, "err": err}).Debug("sent node ringupdate")
 			}
-			if !updated {
-				log.Printf("RingUpdate of %d failed but reported no error", k)
-				continue
-			}
-			log.Printf("RingUpdate of %d succeeded", k)
+
 		}
 		s.RUnlock()
 	}
@@ -279,7 +281,7 @@ func (s *Server) removeManagedNode(nodeid uint64) {
 		s.RUnlock() // nothing else should be messing with s.managedNodes[nodeid] now
 		err := node.Disconnect()
 		if err != nil {
-			log.Printf("Disconnect of node %d encountered err: %s", nodeid, err.Error())
+			s.ctxlog.WithFields(log.Fields{"nodeid": nodeid, "err": err}).Warning("error disconnecting node")
 		}
 		s.Lock()
 		delete(s.managedNodes, nodeid)
