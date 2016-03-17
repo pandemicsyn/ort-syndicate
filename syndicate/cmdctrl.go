@@ -19,6 +19,10 @@ const (
 	_FH_STOP_NODE_TIMEOUT = 60
 )
 
+var (
+	DEFAULT_CTX_TIMEOUT = 10 * time.Second
+)
+
 func ParseManagedNodeAddress(addr string, port int) (string, error) {
 	if addr == "" {
 		return "", fmt.Errorf("address missing")
@@ -105,7 +109,6 @@ func NewManagedNode(o *ManagedNodeOpts) (ManagedNode, error) {
 		InsecureSkipVerify: true,
 	})
 	node.grpcOpts = append(node.grpcOpts, grpc.WithTransportCredentials(creds))
-
 	node.conn, err = grpc.Dial(node.address, node.grpcOpts...)
 	if err != nil {
 		return &managedNode{}, fmt.Errorf("Failed to dial cmdctrl server for node %s: %v", node.address, err)
@@ -202,22 +205,24 @@ func (n *managedNode) Stop() error {
 }
 
 // RingUpdate lets you push a ring update to a remote node
+// If the underlying grpc conn is not ready it will wait for it to become
+// available. If the underlying conn is shutdown (like we caught an update
+// while in the processes of removing a managed node), no update is performed.
 func (n *managedNode) RingUpdate(r *[]byte, version int64) (bool, error) {
 	n.Lock()
 	defer n.Unlock()
 	if n.ringversion == version {
 		return false, nil
 	}
-	connstate, err := n.conn.State()
-	if err != nil {
-		// TODO: reconnect
-		return false, fmt.Errorf("Ring update of %s failed. grpc.conn err: %v", n.address, err)
+	ctx, _ := context.WithTimeout(context.Background(), DEFAULT_CTX_TIMEOUT)
+	for state, err := n.conn.State(); state != grpc.Ready; state, err = n.conn.WaitForStateChange(ctx, state) {
+		if err != nil {
+			return false, err
+		}
+		if state == grpc.Shutdown {
+			return false, fmt.Errorf("node conn has closed")
+		}
 	}
-	if connstate != grpc.Ready {
-		// TODO: reconnect
-		return false, fmt.Errorf("Ring update of %s failed. grpc.conn not ready: %s", n.address, connstate.String())
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
 	ru := &cc.Ring{
 		Ring:    *r,
 		Version: version,
@@ -233,7 +238,7 @@ func (n *managedNode) RingUpdate(r *[]byte, version int64) (bool, error) {
 	}
 	n.ringversion = status.Newversion
 	if n.ringversion != ru.Version {
-		return false, fmt.Errorf("Ring update seems to have failed. Expected: %d, but remote host reports: %d\n", ru.Version, status.Newversion)
+		return false, fmt.Errorf("Ring update failed. Expected: %d, but node reports: %d\n", ru.Version, status.Newversion)
 	}
 	return true, nil
 }
@@ -274,22 +279,16 @@ func (s *Server) RingChangeManager() {
 }
 
 // TODO: if disconnect encounters an error we just log it and remove the node anyway
-func (s *Server) removeManagedNode(nodeid uint64) {
-	s.RLock()
-	if node, ok := s.managedNodes[nodeid]; ok {
-		node.Lock()
-		s.RUnlock() // nothing else should be messing with s.managedNodes[nodeid] now
-		err := node.Disconnect()
-		if err != nil {
-			s.ctxlog.WithFields(log.Fields{"nodeid": nodeid, "err": err}).Warning("error disconnecting node")
+func (s *Server) removeManagedNodes(nodes []uint64) {
+	for _, nodeid := range nodes {
+		if node, ok := s.managedNodes[nodeid]; ok {
+			err := node.Disconnect()
+			if err != nil {
+				s.ctxlog.WithFields(log.Fields{"nodeid": nodeid, "err": err}).Warning("error disconnecting node")
+			}
+			delete(s.managedNodes, nodeid)
 		}
-		s.Lock()
-		delete(s.managedNodes, nodeid)
-		s.Unlock()
-		return
-		//do something here
 	}
-	s.RUnlock()
 	return
 }
 
