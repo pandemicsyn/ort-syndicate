@@ -30,9 +30,7 @@ const (
 var (
 	DefaultNetFilter  = []string{"10.0.0.0/8", "192.168.0.0/16"} //Default the netfilters to private networks
 	DefaultTierFilter = []string{".*"}                           //Default to ...anything
-)
 
-var (
 	InvalidTiers = errors.New("Tier0 already present in ring")
 	InvalidAddrs = errors.New("No valid addresses provided")
 )
@@ -244,9 +242,10 @@ func (s *Server) loadRingBuilderBytes(version int64) (ring, builder *[]byte, err
 }
 
 type RingChange struct {
-	b *ring.Builder
-	r ring.Ring
-	v int64
+	b            *ring.Builder
+	r            ring.Ring
+	v            int64
+	removedNodes []uint64
 }
 
 //ringBuilderPersisterFn is the default ring & builder persistence method used when a ring change is triggered.
@@ -308,6 +307,9 @@ func (s *Server) applyRingChange(c *RingChange) error {
 	s.bb = newBB
 	s.b = c.b
 	s.r = c.r
+	if len(c.removedNodes) != 0 {
+		s.removeManagedNodes(c.removedNodes)
+	}
 	go s.NotifyNodes()
 	return nil
 }
@@ -388,9 +390,14 @@ func (s *Server) RemoveNode(c context.Context, n *pb.Node) (*pb.RingStatus, erro
 	}
 	b.RemoveNode(n.Id)
 	newRing := b.Ring()
-	go s.removeManagedNode(n.Id)
+	change := RingChange{
+		b:            b,
+		r:            newRing,
+		v:            newRing.Version(),
+		removedNodes: []uint64{n.Id},
+	}
 	s.ctxlog.WithField("proposed-ringver", newRing.Version()).Info("attempting to apply ring version")
-	err = s.applyRingChange(&RingChange{b: b, r: newRing, v: newRing.Version()})
+	err = s.applyRingChange(&change)
 	if err != nil {
 		s.ctxlog.WithFields(log.Fields{
 			"proposed-ringver": newRing.Version(),

@@ -115,7 +115,7 @@ func TestNewServer(t *testing.T) {
 
 func TestServer_AddNode(t *testing.T) {
 	s, m := newTestServerWithDefaults()
-	ctx := context.Background()
+	ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 
 	origVersion := s.r.Version()
 	n := &pb.Node{}
