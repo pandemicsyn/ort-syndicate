@@ -1,6 +1,10 @@
 SHA := $(shell git rev-parse --short HEAD)
 VERSION := $(shell cat VERSION)
 ITTERATION := $(shell date +%s)
+DDIR = /etc/syndicate
+RINGDIR = /etc/syndicate/ring
+VV = $(shell ringver /etc/syndicate/ring/valuestore.ring)
+GV = $(shell ringver /etc/syndicate/ring/valuestore.ring)
 
 deps:
 	go get -u ./...
@@ -48,11 +52,17 @@ run:
 ring:
 	go get github.com/gholt/ring/ring
 	go install github.com/gholt/ring/ring
-	mkdir -p /etc/oort/ring/value
-	mkdir -p /etc/oort/ring/group
-	ring /etc/oort/ring/value/valuestore.builder create replicas=3
-	ring /etc/oort/ring/value/valuestore.builder add active=true capacity=1000 tier0=removeme 
-	ring /etc/oort/ring/value/valuestore.builder ring
-	ring /etc/oort/ring/group/groupstore.builder create replicas=3
-	ring /etc/oort/ring/group/groupstore.builder add active=true capacity=1000 tier0=removeme 
-	ring /etc/oort/ring/group/groupstore.builder ring
+	mkdir -p $(RINGDIR)
+	ring $(RINGDIR)/valuestore.builder create replicas=1 config-file=$(DDIR)/valuestore.toml
+	ring $(RINGDIR)/valuestore.builder add active=true capacity=1000 tier0=removeme
+	ring $(RINGDIR)/valuestore.builder ring
+	ring $(RINGDIR)/groupstore.builder create replicas=1 config-file=$(DDIR)/groupstore.toml
+	ring $(RINGDIR)/groupstore.builder add active=true capacity=1000 tier0=removeme
+	ring $(RINGDIR)/groupstore.builder ring
+	$(MAKE) ringversion
+
+ringversion:
+	cp -av $(RINGDIR)/valuestore.ring $(RINGDIR)/$(VV)-valuestore.ring
+	cp -av $(RINGDIR)/valuestore.builder $(RINGDIR)/$(VV)-valuestore.builder
+	cp -av $(RINGDIR)/groupstore.ring $(RINGDIR)/$(GV)-groupstore.ring
+	cp -av $(RINGDIR)/groupstore.builder $(RINGDIR)/$(GV)-groupstore.builder

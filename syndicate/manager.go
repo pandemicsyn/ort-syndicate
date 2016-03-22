@@ -18,13 +18,13 @@ import (
 const (
 	_SYN_REGISTER_TIMEOUT = 4
 	_SYN_DIAL_TIMEOUT     = 2
-	DefaultPort           = 8443                   //The default port to use for the main backend service
-	DefaultCmdCtrlPort    = 4443                   //The default port to use for cmdctrl (address0)
-	DefaultMsgRingPort    = 8001                   //The default port the TCPMsgRing should use (address1)
-	DefaultStorePort      = 6379                   //The default port the Store's should use (address2)
-	DefaultRingDir        = "/etc/oort/ring"       //The default directory where to store the rings
-	DefaultCertFile       = "/etc/oort/server.crt" //The default SSL Cert
-	DefaultCertKey        = "/etc/oort/server.key" //The default SSL Key
+	DefaultPort           = 8443                        //The default port to use for the main backend service
+	DefaultCmdCtrlPort    = 4443                        //The default port to use for cmdctrl (address0)
+	DefaultMsgRingPort    = 8001                        //The default port the TCPMsgRing should use (address1)
+	DefaultStorePort      = 6379                        //The default port the Store's should use (address2)
+	DefaultRingDir        = "/etc/syndicate/ring"       //The default directory where to store the rings
+	DefaultCertFile       = "/etc/syndicate/server.crt" //The default SSL Cert
+	DefaultCertKey        = "/etc/syndicate/server.key" //The default SSL Key
 )
 
 var (
