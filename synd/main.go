@@ -100,7 +100,7 @@ func (rs *RingSyndicates) launchSyndicates(k int) {
 
 func main() {
 	var err error
-	configFile := "/etc/oort/syndicate.toml"
+	configFile := "/etc/syndicate/syndicate.toml"
 	if os.Getenv("SYNDICATE_CONFIG") != "" {
 		configFile = os.Getenv("SYNDICATE_CONFIG")
 	}

@@ -816,7 +816,6 @@ func (s *Server) RegisterNode(c context.Context, r *pb.RegisterRequest) (*pb.Nod
 	case len(r.Tiers) == 0:
 		return &pb.NodeConfig{}, fmt.Errorf("No tier0 provided")
 	case len(r.Tiers) > 0:
-		s.ctxlog.Println("wtf not even")
 		if !s.validTiers(r.Tiers) {
 			return &pb.NodeConfig{}, InvalidTiers
 		}

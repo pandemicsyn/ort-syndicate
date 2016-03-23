@@ -4,7 +4,7 @@ ITTERATION := $(shell date +%s)
 DDIR = /etc/syndicate
 RINGDIR = /etc/syndicate/ring
 VV = $(shell ringver /etc/syndicate/ring/valuestore.ring)
-GV = $(shell ringver /etc/syndicate/ring/valuestore.ring)
+GV = $(shell ringver /etc/syndicate/ring/groupstore.ring)
 
 deps:
 	go get -u ./...
