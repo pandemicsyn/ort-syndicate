@@ -111,12 +111,5 @@ func (s *SRVLoader) Load() (nodeconfig *pb.NodeConfig, err error) {
 		}
 		s.SyndicateURL = fmt.Sprintf("%s:%d", serviceAddrs[0].Target, serviceAddrs[0].Port)
 	}
-	nodeconfig, err = s.getConfig()
-	if err != nil {
-		if err == ErrSRVLookupFailed {
-			return nodeconfig, err
-		}
-		return nodeconfig, err
-	}
-	return nodeconfig, nil
+	return s.getConfig()
 }
