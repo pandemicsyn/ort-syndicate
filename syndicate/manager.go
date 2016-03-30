@@ -691,8 +691,16 @@ func (s *Server) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
 
 //GetRingStream return a stream of rings as they become available
 func (s *Server) GetRingStream(req *pb.SubscriberID, stream pb.Syndicate_GetRingStreamServer) error {
+	s.RLock()
 	ringChange := s.addRingSubscriber(req.Id)
 	streamFinished := false
+	if err := stream.Send(&pb.Ring{Version: s.r.Version(), Ring: *s.rb}); err != nil {
+		s.RUnlock()
+		s.ctxlog.WithField("err", err).Error("Error GetRingStream initial send")
+		streamFinished = true
+		return s.removeRingSubscriber(req.Id)
+	}
+	s.RUnlock()
 	for ring := range ringChange {
 		if err := stream.Send(ring); err != nil {
 			s.ctxlog.WithField("err", err).Error("Error GetRingStream send")
