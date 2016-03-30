@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	pb "github.com/pandemicsyn/syndicate/api/proto"
@@ -107,7 +106,7 @@ func (s *SRVLoader) getConfig() (*pb.NodeConfig, error) {
 func (s *SRVLoader) Load() (nodeconfig *pb.NodeConfig, err error) {
 	if s.SyndicateURL == "" {
 		// Specific endpoint given
-		if strings.Contains(s.Record, ":") {
+		if _, _, err := net.SplitHostPort(s.Record); err == nil {
 			s.SyndicateURL = s.Record
 		} else {
 			serviceAddrs, err := lookup(s.Record)
