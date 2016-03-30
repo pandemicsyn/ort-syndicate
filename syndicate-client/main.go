@@ -108,6 +108,7 @@ search meta=<metastring>
 search tier=<string> or search tierX=<string>
 search address=<string> or search addressX=<string>
 search any of the above K/V combos
+watch ring
 rm <nodeid>
 active <nodeid> true|false
 capacity <nodeid> <uint32>
@@ -211,6 +212,8 @@ func (s *SyndClient) mainEntry(args []string) error {
 		}
 	case "search":
 		return s.SearchNodes(args[1:])
+	case "watch":
+		return s.WatchRing()
 	case "rm":
 		if len(args) == 2 {
 			id, err := strconv.ParseUint(args[1], 0, 64)
@@ -505,29 +508,8 @@ func (s *SyndClient) SetConfig(config []byte, restart bool) (err error) {
 	return nil
 }
 
-func (s *SyndClient) StreamRing() (err error) {
-	ctx := context.Background()
-	sid := pb.SubscriberID{"wat"}
-	stream, err := s.client.GetRingStream(ctx, &sid)
-	if err != nil {
-		fmt.Println(err)
-	}
-	for {
-		ring, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(ring.Version)
-	}
-	return nil
-}
-
 // SearchNodes uses a provide pb.Node to search for matching nodes in the active ring
 func (s *SyndClient) SearchNodes(args []string) (err error) {
-	s.StreamRing()
 	filter := &pb.Node{}
 	for _, arg := range args {
 		sarg := strings.SplitN(arg, "=", 2)
@@ -600,5 +582,25 @@ func (s *SyndClient) SearchNodes(args []string) (err error) {
 		printNode(n)
 	}
 
+	return nil
+}
+
+func (s *SyndClient) WatchRing() error {
+	ctx := context.Background()
+	sid := pb.SubscriberID{"wat"}
+	stream, err := s.client.GetRingStream(ctx, &sid)
+	if err != nil {
+		return err
+	}
+	for {
+		ring, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		fmt.Println(ring.Version)
+	}
 	return nil
 }
