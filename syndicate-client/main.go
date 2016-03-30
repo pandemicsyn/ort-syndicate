@@ -587,7 +587,9 @@ func (s *SyndClient) SearchNodes(args []string) (err error) {
 
 func (s *SyndClient) WatchRing() error {
 	ctx := context.Background()
-	sid := pb.SubscriberID{"wat"}
+	hname, _ := os.Hostname()
+	user, _ := user.Current()
+	sid := pb.SubscriberID{fmt.Sprintf("%s:%s-sc", hname, user.Name)}
 	stream, err := s.client.GetRingStream(ctx, &sid)
 	if err != nil {
 		return err
