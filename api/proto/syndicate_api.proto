@@ -17,7 +17,7 @@ service Syndicate {
     rpc GetNodeConfig(Node) returns (RingConf) {}
     rpc SearchNodes(Node) returns (SearchResult) {}
     rpc GetRing(EmptyMsg) returns (Ring) {}
-    rpc GetRingStream(EmptyMsg) returns (stream Ring) {}
+    rpc GetRingStream(SubscriberID) returns (stream Ring) {}
     rpc RegisterNode(RegisterRequest) returns (NodeConfig) {}
 }
 
@@ -54,6 +54,10 @@ message Conf {
     bool  restartRequired = 2;
 }
 
+message SubscriberID {
+    string id = 1;
+}
+
 message RegisterRequest {
     string hostname = 1;
     repeated string addrs = 2;
@@ -88,6 +92,7 @@ message Ring {
 message SearchResult {
     repeated Node nodes = 1;
 }
+
 
 
 service RingDist {

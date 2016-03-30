@@ -258,6 +258,7 @@ func (s *Server) NotifyNodes() {
 	}
 	s.RUnlock()
 	s.changeChan <- m
+	s.subsChangeChan <- m
 }
 
 //RingChangeManager gets ring change messages from the change chan and handles

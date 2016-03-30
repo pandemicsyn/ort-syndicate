@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -504,8 +505,29 @@ func (s *SyndClient) SetConfig(config []byte, restart bool) (err error) {
 	return nil
 }
 
+func (s *SyndClient) StreamRing() (err error) {
+	ctx := context.Background()
+	sid := pb.SubscriberID{"wat"}
+	stream, err := s.client.GetRingStream(ctx, &sid)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for {
+		ring, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(ring.Version)
+	}
+	return nil
+}
+
 // SearchNodes uses a provide pb.Node to search for matching nodes in the active ring
 func (s *SyndClient) SearchNodes(args []string) (err error) {
+	s.StreamRing()
 	filter := &pb.Node{}
 	for _, arg := range args {
 		sarg := strings.SplitN(arg, "=", 2)
@@ -577,5 +599,6 @@ func (s *SyndClient) SearchNodes(args []string) (err error) {
 		fmt.Println("# result", i)
 		printNode(n)
 	}
+
 	return nil
 }

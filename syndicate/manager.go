@@ -67,19 +67,21 @@ func parseSlaveAddrs(slaveAddrs []string) []*RingSlave {
 //Server is the syndicate manager instance
 type Server struct {
 	sync.RWMutex
-	servicename  string
-	cfg          *Config
-	ctxlog       *log.Entry
-	r            ring.Ring
-	b            *ring.Builder
-	slaves       []*RingSlave
-	localAddress string
-	rb           *[]byte // even a 1000 node ring is reasonably small (17k) so just keep the current ring in mem
-	bb           *[]byte
-	netlimits    []*net.IPNet
-	tierlimits   []string
-	managedNodes map[uint64]ManagedNode
-	changeChan   chan *changeMsg
+	servicename    string
+	cfg            *Config
+	ctxlog         *log.Entry
+	r              ring.Ring
+	b              *ring.Builder
+	slaves         []*RingSlave
+	localAddress   string
+	rb             *[]byte // even a 1000 node ring is reasonably small (17k) so just keep the current ring in mem
+	bb             *[]byte
+	netlimits      []*net.IPNet
+	tierlimits     []string
+	managedNodes   map[uint64]ManagedNode
+	changeChan     chan *changeMsg
+	ringSubs       *RingSubscribers
+	subsChangeChan chan *changeMsg
 	// mostly just present to aid mocking
 	rbLoaderFn   func(path string) ([]byte, error)
 	rbPersistFn  func(c *RingChange, renameMaster bool) (error, error)
@@ -161,7 +163,12 @@ func NewServer(cfg *Config, servicename string, opts ...MockOpt) (*Server, error
 	s.tierlimits = cfg.TierFilter
 	s.managedNodes = bootstrapManagedNodes(s.r, s.cfg.CmdCtrlPort, s.ctxlog)
 	s.changeChan = make(chan *changeMsg, 1)
+	s.subsChangeChan = make(chan *changeMsg, 1)
 	go s.RingChangeManager()
+	s.ringSubs = &RingSubscribers{
+		subs: make(map[string]chan *pb.Ring),
+	}
+	go s.ringSubscribersNotify()
 	s.slaves = parseSlaveAddrs(cfg.Slaves)
 	if len(s.slaves) == 0 {
 		s.ctxlog.Debug("running without slaves")
@@ -680,6 +687,30 @@ func (s *Server) GetRing(c context.Context, e *pb.EmptyMsg) (*pb.Ring, error) {
 	s.RLock()
 	defer s.RUnlock()
 	return &pb.Ring{Version: s.r.Version(), Ring: *s.rb}, nil
+}
+
+//GetRingStream return a stream of rings as they become available
+func (s *Server) GetRingStream(req *pb.SubscriberID, stream pb.Syndicate_GetRingStreamServer) error {
+	ringChange := s.addRingSubscriber(req.Id)
+	streamFinished := false
+	for ring := range ringChange {
+		if err := stream.Send(ring); err != nil {
+			s.ctxlog.WithField("err", err).Error("Error GetRingStream send")
+			streamFinished = true
+			break
+		}
+	}
+	s.ctxlog.Debug("closing ring sub stream")
+	//our chan got closed before expected
+	if !streamFinished {
+		err := s.removeRingSubscriber(req.Id)
+		if err != nil {
+			s.ctxlog.WithFields(log.Fields{"key": req.Id,
+				"err": err}).Error("ring sub remove failed after chan closed while stream active")
+		}
+		return fmt.Errorf("ring change chan closed")
+	}
+	return s.removeRingSubscriber(req.Id)
 }
 
 //validNodeIP verifies that the provided ip is not a loopback or multicast address
