@@ -589,7 +589,7 @@ func (s *SyndClient) WatchRing() error {
 	ctx := context.Background()
 	hname, _ := os.Hostname()
 	user, _ := user.Current()
-	sid := pb.SubscriberID{fmt.Sprintf("%s:%s-sc", hname, user.Name)}
+	sid := pb.SubscriberID{Id: fmt.Sprintf("%s:%s-sc", hname, user.Name)}
 	stream, err := s.client.GetRingStream(ctx, &sid)
 	if err != nil {
 		return err
