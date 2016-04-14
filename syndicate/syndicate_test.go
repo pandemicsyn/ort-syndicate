@@ -101,6 +101,7 @@ func newTestServer(cfg *Config, servicename string, mockinfo *MockRingBuilderThi
 	s.managedNodes = make(map[uint64]ManagedNode, 0)
 	s.slaves = mockinfo.slaves
 	s.changeChan = mockinfo.changeChan
+	s.metrics = metricsInit(s.servicename)
 	return s
 }
 

@@ -82,8 +82,8 @@ func metricsInit(servicename string) *syndicateMetrics {
 		Help:        "Current number of unmanaged nodes subscribed for ring changes.",
 		ConstLabels: prometheus.Labels{"instance": servicename},
 	})
-	prometheus.MustRegister(m.managedNodes)
-	prometheus.MustRegister(m.subscriberNodes)
+	prometheus.Register(m.managedNodes)
+	prometheus.Register(m.subscriberNodes)
 	return &m
 }
 
