@@ -18,13 +18,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 	pb "github.com/pandemicsyn/syndicate/api/proto"
 	"github.com/pandemicsyn/syndicate/syndicate"
-	"github.com/pandemicsyn/syndicate/utils/node_exporter"
+	"github.com/pandemicsyn/syndicate/utils/sysmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
 	printVersionInfo  = flag.Bool("version", false, "print version/build info")
-	enabledCollectors = flag.String("collectors", node_exporter.FilterAvailableCollectors(node_exporter.DefaultCollectors), "Comma-separated list of collectors to use.")
+	enabledCollectors = flag.String("collectors", sysmetrics.FilterAvailableCollectors(sysmetrics.DefaultCollectors), "Comma-separated list of collectors to use.")
 )
 
 var syndVersion string
@@ -148,11 +148,11 @@ func main() {
 	}
 	//now that syndics are up and running launch global metrics endpoint
 	//setup node_collector for system level metrics first
-	collectors, err := node_exporter.LoadCollectors(*enabledCollectors)
+	collectors, err := sysmetrics.LoadCollectors(*enabledCollectors)
 	if err != nil {
 		log.Fatalf("Couldn't load collectors: %s", err)
 	}
-	nodeCollector := node_exporter.New(collectors)
+	nodeCollector := sysmetrics.New(collectors)
 	prometheus.MustRegister(nodeCollector)
 	http.Handle("/metrics", prometheus.Handler())
 	go http.ListenAndServe(":9100", nil)
