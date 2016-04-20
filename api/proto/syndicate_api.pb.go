@@ -33,6 +33,11 @@ import proto1 "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto1.Marshal
 var _ = fmt.Errorf
@@ -280,6 +285,729 @@ func init() {
 	proto1.RegisterType((*StoreResult)(nil), "proto.StoreResult")
 	proto1.RegisterType((*StatusRequest)(nil), "proto.StatusRequest")
 	proto1.RegisterType((*StatusMsg)(nil), "proto.StatusMsg")
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
+// Client API for Syndicate service
+
+type SyndicateClient interface {
+	AddNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
+	RemoveNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
+	ModNode(ctx context.Context, in *ModifyMsg, opts ...grpc.CallOption) (*RingStatus, error)
+	SetConf(ctx context.Context, in *Conf, opts ...grpc.CallOption) (*RingStatus, error)
+	SetActive(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
+	SetCapacity(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
+	ReplaceAddresses(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
+	ReplaceTiers(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error)
+	GetVersion(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingStatus, error)
+	GetGlobalConfig(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingConf, error)
+	GetNodeConfig(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingConf, error)
+	SearchNodes(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SearchResult, error)
+	GetRing(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*Ring, error)
+	GetRingStream(ctx context.Context, in *SubscriberID, opts ...grpc.CallOption) (Syndicate_GetRingStreamClient, error)
+	RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error)
+}
+
+type syndicateClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewSyndicateClient(cc *grpc.ClientConn) SyndicateClient {
+	return &syndicateClient{cc}
+}
+
+func (c *syndicateClient) AddNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/AddNode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) RemoveNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/RemoveNode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) ModNode(ctx context.Context, in *ModifyMsg, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/ModNode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) SetConf(ctx context.Context, in *Conf, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SetConf", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) SetActive(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SetActive", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) SetCapacity(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SetCapacity", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) ReplaceAddresses(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/ReplaceAddresses", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) ReplaceTiers(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/ReplaceTiers", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) GetVersion(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingStatus, error) {
+	out := new(RingStatus)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetVersion", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) GetGlobalConfig(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*RingConf, error) {
+	out := new(RingConf)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetGlobalConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) GetNodeConfig(ctx context.Context, in *Node, opts ...grpc.CallOption) (*RingConf, error) {
+	out := new(RingConf)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetNodeConfig", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) SearchNodes(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SearchResult, error) {
+	out := new(SearchResult)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/SearchNodes", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) GetRing(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*Ring, error) {
+	out := new(Ring)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/GetRing", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *syndicateClient) GetRingStream(ctx context.Context, in *SubscriberID, opts ...grpc.CallOption) (Syndicate_GetRingStreamClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Syndicate_serviceDesc.Streams[0], c.cc, "/proto.Syndicate/GetRingStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &syndicateGetRingStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Syndicate_GetRingStreamClient interface {
+	Recv() (*Ring, error)
+	grpc.ClientStream
+}
+
+type syndicateGetRingStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *syndicateGetRingStreamClient) Recv() (*Ring, error) {
+	m := new(Ring)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *syndicateClient) RegisterNode(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*NodeConfig, error) {
+	out := new(NodeConfig)
+	err := grpc.Invoke(ctx, "/proto.Syndicate/RegisterNode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Syndicate service
+
+type SyndicateServer interface {
+	AddNode(context.Context, *Node) (*RingStatus, error)
+	RemoveNode(context.Context, *Node) (*RingStatus, error)
+	ModNode(context.Context, *ModifyMsg) (*RingStatus, error)
+	SetConf(context.Context, *Conf) (*RingStatus, error)
+	SetActive(context.Context, *Node) (*RingStatus, error)
+	SetCapacity(context.Context, *Node) (*RingStatus, error)
+	ReplaceAddresses(context.Context, *Node) (*RingStatus, error)
+	ReplaceTiers(context.Context, *Node) (*RingStatus, error)
+	GetVersion(context.Context, *EmptyMsg) (*RingStatus, error)
+	GetGlobalConfig(context.Context, *EmptyMsg) (*RingConf, error)
+	GetNodeConfig(context.Context, *Node) (*RingConf, error)
+	SearchNodes(context.Context, *Node) (*SearchResult, error)
+	GetRing(context.Context, *EmptyMsg) (*Ring, error)
+	GetRingStream(*SubscriberID, Syndicate_GetRingStreamServer) error
+	RegisterNode(context.Context, *RegisterRequest) (*NodeConfig, error)
+}
+
+func RegisterSyndicateServer(s *grpc.Server, srv SyndicateServer) {
+	s.RegisterService(&_Syndicate_serviceDesc, srv)
+}
+
+func _Syndicate_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).AddNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/AddNode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).AddNode(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_RemoveNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).RemoveNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/RemoveNode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).RemoveNode(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_ModNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModifyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).ModNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/ModNode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).ModNode(ctx, req.(*ModifyMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_SetConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Conf)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).SetConf(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/SetConf",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).SetConf(ctx, req.(*Conf))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_SetActive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).SetActive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/SetActive",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).SetActive(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_SetCapacity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).SetCapacity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/SetCapacity",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).SetCapacity(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_ReplaceAddresses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).ReplaceAddresses(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/ReplaceAddresses",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).ReplaceAddresses(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_ReplaceTiers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).ReplaceTiers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/ReplaceTiers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).ReplaceTiers(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).GetVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/GetVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).GetVersion(ctx, req.(*EmptyMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_GetGlobalConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).GetGlobalConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/GetGlobalConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).GetGlobalConfig(ctx, req.(*EmptyMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_GetNodeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).GetNodeConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/GetNodeConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).GetNodeConfig(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_SearchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Node)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).SearchNodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/SearchNodes",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).SearchNodes(ctx, req.(*Node))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_GetRing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).GetRing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/GetRing",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).GetRing(ctx, req.(*EmptyMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Syndicate_GetRingStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SubscriberID)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SyndicateServer).GetRingStream(m, &syndicateGetRingStreamServer{stream})
+}
+
+type Syndicate_GetRingStreamServer interface {
+	Send(*Ring) error
+	grpc.ServerStream
+}
+
+type syndicateGetRingStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *syndicateGetRingStreamServer) Send(m *Ring) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Syndicate_RegisterNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SyndicateServer).RegisterNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Syndicate/RegisterNode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SyndicateServer).RegisterNode(ctx, req.(*RegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Syndicate_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.Syndicate",
+	HandlerType: (*SyndicateServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddNode",
+			Handler:    _Syndicate_AddNode_Handler,
+		},
+		{
+			MethodName: "RemoveNode",
+			Handler:    _Syndicate_RemoveNode_Handler,
+		},
+		{
+			MethodName: "ModNode",
+			Handler:    _Syndicate_ModNode_Handler,
+		},
+		{
+			MethodName: "SetConf",
+			Handler:    _Syndicate_SetConf_Handler,
+		},
+		{
+			MethodName: "SetActive",
+			Handler:    _Syndicate_SetActive_Handler,
+		},
+		{
+			MethodName: "SetCapacity",
+			Handler:    _Syndicate_SetCapacity_Handler,
+		},
+		{
+			MethodName: "ReplaceAddresses",
+			Handler:    _Syndicate_ReplaceAddresses_Handler,
+		},
+		{
+			MethodName: "ReplaceTiers",
+			Handler:    _Syndicate_ReplaceTiers_Handler,
+		},
+		{
+			MethodName: "GetVersion",
+			Handler:    _Syndicate_GetVersion_Handler,
+		},
+		{
+			MethodName: "GetGlobalConfig",
+			Handler:    _Syndicate_GetGlobalConfig_Handler,
+		},
+		{
+			MethodName: "GetNodeConfig",
+			Handler:    _Syndicate_GetNodeConfig_Handler,
+		},
+		{
+			MethodName: "SearchNodes",
+			Handler:    _Syndicate_SearchNodes_Handler,
+		},
+		{
+			MethodName: "GetRing",
+			Handler:    _Syndicate_GetRing_Handler,
+		},
+		{
+			MethodName: "RegisterNode",
+			Handler:    _Syndicate_RegisterNode_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetRingStream",
+			Handler:       _Syndicate_GetRingStream_Handler,
+			ServerStreams: true,
+		},
+	},
+}
+
+// Client API for RingDist service
+
+type RingDistClient interface {
+	Store(ctx context.Context, in *RingMsg, opts ...grpc.CallOption) (*StoreResult, error)
+	Revert(ctx context.Context, in *RingMsg, opts ...grpc.CallOption) (*StoreResult, error)
+	Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusMsg, error)
+	Setup(ctx context.Context, in *RingMsg, opts ...grpc.CallOption) (*StoreResult, error)
+}
+
+type ringDistClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewRingDistClient(cc *grpc.ClientConn) RingDistClient {
+	return &ringDistClient{cc}
+}
+
+func (c *ringDistClient) Store(ctx context.Context, in *RingMsg, opts ...grpc.CallOption) (*StoreResult, error) {
+	out := new(StoreResult)
+	err := grpc.Invoke(ctx, "/proto.RingDist/Store", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ringDistClient) Revert(ctx context.Context, in *RingMsg, opts ...grpc.CallOption) (*StoreResult, error) {
+	out := new(StoreResult)
+	err := grpc.Invoke(ctx, "/proto.RingDist/Revert", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ringDistClient) Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusMsg, error) {
+	out := new(StatusMsg)
+	err := grpc.Invoke(ctx, "/proto.RingDist/Status", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ringDistClient) Setup(ctx context.Context, in *RingMsg, opts ...grpc.CallOption) (*StoreResult, error) {
+	out := new(StoreResult)
+	err := grpc.Invoke(ctx, "/proto.RingDist/Setup", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for RingDist service
+
+type RingDistServer interface {
+	Store(context.Context, *RingMsg) (*StoreResult, error)
+	Revert(context.Context, *RingMsg) (*StoreResult, error)
+	Status(context.Context, *StatusRequest) (*StatusMsg, error)
+	Setup(context.Context, *RingMsg) (*StoreResult, error)
+}
+
+func RegisterRingDistServer(s *grpc.Server, srv RingDistServer) {
+	s.RegisterService(&_RingDist_serviceDesc, srv)
+}
+
+func _RingDist_Store_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RingMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RingDistServer).Store(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RingDist/Store",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RingDistServer).Store(ctx, req.(*RingMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RingDist_Revert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RingMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RingDistServer).Revert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RingDist/Revert",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RingDistServer).Revert(ctx, req.(*RingMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RingDist_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RingDistServer).Status(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RingDist/Status",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RingDistServer).Status(ctx, req.(*StatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RingDist_Setup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RingMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RingDistServer).Setup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RingDist/Setup",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RingDistServer).Setup(ctx, req.(*RingMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _RingDist_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.RingDist",
+	HandlerType: (*RingDistServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Store",
+			Handler:    _RingDist_Store_Handler,
+		},
+		{
+			MethodName: "Revert",
+			Handler:    _RingDist_Revert_Handler,
+		},
+		{
+			MethodName: "Status",
+			Handler:    _RingDist_Status_Handler,
+		},
+		{
+			MethodName: "Setup",
+			Handler:    _RingDist_Setup_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{},
 }
 
 var fileDescriptor0 = []byte{
