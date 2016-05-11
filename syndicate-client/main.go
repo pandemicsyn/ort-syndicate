@@ -48,6 +48,7 @@ stop <cmdctrladdress> #attempts to stop the remote nodes backend
 restart <cmdctrladdress> #attempts to restart the remote nodes backend
 exit <cmdctrladdress> #attempts to exit the remote node
 upgrade <cmdctrladdress> <github version string> #asks the node to upgrade itself
+softwareversion  <cmdctrladdress> #gets the currently running version from the node
 version			#print version
 config          #print ring config
 config <nodeid> #uses uint64 id
@@ -137,6 +138,15 @@ func (s *SyndClient) mainEntry(args []string) error {
 			return err
 		}
 		return c.upgradeNodeCmd(args[2])
+	case "softwareversion":
+		if len(args) != 2 {
+			return helpCmd()
+		}
+		c, err := NewCmdCtrlClient(args[1])
+		if err != nil {
+			return err
+		}
+		return c.getSoftwareVersionCmd()
 	case "ringupdate":
 		if len(args) != 3 {
 			return helpCmd()
