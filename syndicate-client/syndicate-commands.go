@@ -316,10 +316,10 @@ func (s *SyndClient) UpgradeSoftwareVersions(version string) error {
 	for _, node := range res.Nodes {
 		status, err := s.client.NodeUpgradeSoftwareVersion(ctx, &pb.NodeUpgrade{Id: node.Id, Version: version})
 		if err != nil {
-			fmt.Printf("(%d) Error upgrading software version for: %s\n", node.Id, err.Error())
+			fmt.Printf("%d Error upgrading software version for: %s\n", node.Id, err.Error())
 			continue
 		}
-		fmt.Printf("Node: %d Status: %t Addresses: %+v", node.Id, status.Status, node.Addresses)
+		fmt.Printf("%d %t\n", node.Id, status.Status)
 	}
 	return nil
 }
