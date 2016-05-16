@@ -11,9 +11,8 @@ import (
 func (s *Server) GetNodeSoftwareVersion(c context.Context, n *pb.Node) (*pb.NodeSoftwareVersion, error) {
 	s.RLock()
 	defer s.RUnlock()
-	node := s.r.Node(n.Id)
-	if node == nil {
-		return &pb.NodeSoftwareVersion{}, fmt.Errorf("Node %d not found", n.Id)
+	if node, ok := s.managedNodes[n.Id]; !ok {
+		return &pb.NodeSoftwareVersion{}, fmt.Errorf("Node %d not found or not managed node", n.Id)
 	}
 	version, err := s.managedNodes[n.Id].GetSoftwareVersion()
 	return &pb.NodeSoftwareVersion{Version: version}, err
@@ -23,9 +22,8 @@ func (s *Server) GetNodeSoftwareVersion(c context.Context, n *pb.Node) (*pb.Node
 func (s *Server) NodeUpgradeSoftwareVersion(c context.Context, n *pb.NodeUpgrade) (*pb.NodeUpgradeStatus, error) {
 	s.RLock()
 	defer s.RUnlock()
-	node := s.r.Node(n.Id)
-	if node == nil {
-		return &pb.NodeUpgradeStatus{Status: false, Msg: ""}, fmt.Errorf("Node %d not found", n.Id)
+	if node, ok := s.managedNodes[n.Id]; !ok {
+		return &pb.NodeSoftwareVersion{}, fmt.Errorf("Node %d not found or not managed node", n.Id)
 	}
 	status, err := s.managedNodes[n.Id].UpgradeSoftwareVersion(n.Version)
 	return &pb.NodeUpgradeStatus{Status: status, Msg: ""}, err
