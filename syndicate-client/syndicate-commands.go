@@ -319,7 +319,7 @@ func (s *SyndClient) UpgradeSoftwareVersions(version string) error {
 			fmt.Printf("(%d) Error upgrading software version for: %s\n", node.Id, err.Error())
 			continue
 		}
-		fmt.Printf("Node: %d Status: %t Err: '%s' Addresses: %+v", node.Id, status.Status, err.Error(), node.Addresses)
+		fmt.Printf("Node: %d Status: %t Addresses: %+v", node.Id, status.Status, node.Addresses)
 	}
 	return nil
 }
