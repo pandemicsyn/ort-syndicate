@@ -293,7 +293,7 @@ func (s *SyndClient) GetSoftwareVersions() error {
 	for _, node := range res.Nodes {
 		ver, err := s.client.GetNodeSoftwareVersion(ctx, node)
 		if err != nil {
-			fmt.Printf("(%d) Error getting software version for: %s\n", node.Id, err.Error())
+			fmt.Printf("%d Error getting software version for: %s\n", node.Id, err.Error())
 			continue
 		}
 		fmt.Printf("%d %s - %+v\n", node.Id, ver.Version, node.Addresses)
@@ -317,6 +317,7 @@ func (s *SyndClient) UpgradeSoftwareVersions(version string) error {
 		status, err := s.client.NodeUpgradeSoftwareVersion(ctx, &pb.NodeUpgrade{Id: node.Id, Version: version})
 		if err != nil {
 			fmt.Printf("(%d) Error upgrading software version for: %s\n", node.Id, err.Error())
+			continue
 		}
 		fmt.Printf("Node: %d Status: %t Err: '%s' Addresses: %+v", node.Id, status.Status, err.Error(), node.Addresses)
 	}
