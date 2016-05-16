@@ -294,6 +294,7 @@ func (s *SyndClient) GetSoftwareVersions() error {
 		ver, err := s.client.GetNodeSoftwareVersion(ctx, node)
 		if err != nil {
 			fmt.Printf("(%d) Error getting software version for: %s\n", node.Id, err.Error())
+			continue
 		}
 		fmt.Printf("%d %s - %+v\n", node.Id, ver.Version, node.Addresses)
 	}
