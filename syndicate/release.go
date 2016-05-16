@@ -22,7 +22,7 @@ func (s *Server) GetNodeSoftwareVersion(c context.Context, n *pb.Node) (*pb.Node
 func (s *Server) NodeUpgradeSoftwareVersion(c context.Context, n *pb.NodeUpgrade) (*pb.NodeUpgradeStatus, error) {
 	s.RLock()
 	defer s.RUnlock()
-	if _, ok := s.managedNodes[n.Id]; !ok {
+	if _, ok := s.managedNodes[n.Id]; ok {
 		status, err := s.managedNodes[n.Id].UpgradeSoftwareVersion(n.Version)
 		return &pb.NodeUpgradeStatus{Status: status, Msg: ""}, err
 	}
