@@ -750,7 +750,7 @@ func TestServer_RegisterNode(t *testing.T) {
 		Cpus:     0,
 		Memfree:  1000,
 		Memtotal: 1000,
-		Disks:    []*pb.Disk{&pb.Disk{Path: "/data", Size: 10000000000}},
+		Disks:    []*pb.Disk{&pb.Disk{Path: "/data", Size_: 10000000000}},
 	}
 
 	badRequests := map[string]*pb.RegisterRequest{
@@ -891,7 +891,7 @@ func TestServer_RegisterNode(t *testing.T) {
 			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
 		} else {
 			//verify default weight assignment
-			if nodesbyaddr[0].Capacity() != uint32(okHwProfile.Disks[0].Size/1024/1024/1024) || nodesbyaddr[0].Active() == false {
+			if nodesbyaddr[0].Capacity() != uint32(okHwProfile.Disks[0].Size_/1024/1024/1024) || nodesbyaddr[0].Active() == false {
 				t.Errorf("RegisterNodes weight assignment strategy is self but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
 			}
 		}
@@ -922,7 +922,7 @@ func TestServer_RegisterNode(t *testing.T) {
 			t.Errorf("RegisterNode(ctx, %#v), (%#v, %s) localid should have matched id's in ring. by addr (%d), by meta (%d)", validRequest, r, err.Error(), nodesbyaddr[0].ID(), nodesbymeta[0].ID())
 		} else {
 			//verify default weight assignment
-			if nodesbyaddr[0].Capacity() != uint32(okHwProfile.Disks[0].Size/1024/1024/1024) || nodesbyaddr[0].Active() != false {
+			if nodesbyaddr[0].Capacity() != uint32(okHwProfile.Disks[0].Size_/1024/1024/1024) || nodesbyaddr[0].Active() != false {
 				t.Errorf("RegisterNodes weight assignment strategy is manual but found node with capacity (%d) and active (%v)", nodesbyaddr[0].Capacity(), nodesbyaddr[0].Active())
 			}
 		}
