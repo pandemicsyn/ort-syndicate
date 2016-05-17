@@ -60,6 +60,7 @@ search address=<string> or search addressX=<string>
 search any of the above K/V combos
 watch ring
 rm <nodeid>
+replicas <replicacount>
 active <nodeid> true|false
 capacity <nodeid> <uint32>
 addrs <nodeid> 1.1.1.1,2.2.2.2,...
@@ -182,6 +183,17 @@ func (s *SyndClient) mainEntry(args []string) error {
 				return err
 			}
 			return s.rmNodeCmd(id)
+		}
+	case "replicas":
+		if len(args) == 2 {
+			count, err := strconv.Atoi(args[1])
+			if err != nil {
+				return err
+			}
+			if count < 1 {
+				return fmt.Errorf("invalid <count> %d", count)
+			}
+			return s.setReplicasCmd(count)
 		}
 	case "active":
 		if len(args) == 3 {
