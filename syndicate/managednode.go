@@ -64,8 +64,6 @@ func bootstrapManagedNodes(ring ring.Ring, ccport int, ctxlog *log.Entry, gopts 
 }
 
 type ManagedNode interface {
-	ConnWaitForStateChange(context.Context, time.Duration, grpc.ConnectivityState) (grpc.ConnectivityState, error)
-	ConnState() (grpc.ConnectivityState, error)
 	Connect() error
 	Disconnect() error
 	Ping() (bool, string, error)
@@ -125,33 +123,6 @@ func (n *managedNode) Address() string {
 	n.RLock()
 	defer n.RUnlock()
 	return n.address
-}
-
-// Take direct from grpc.Conn.WaitForStateChange:
-// WaitForStateChange blocks until the state changes to something other than the sourceState
-// or timeout fires. The grpc instance returns error if timeout fires or new ConnectivityState otherwise.
-// Our instance returns if timeout fires or state changes OR returns state is Shutdown if n.conn is nil!
-// I assume we'll wanna use this do things like update synd state when a node comes online after a failure
-// or something.
-func (n *managedNode) ConnWaitForStateChange(ctx context.Context, timeout time.Duration, sourceState grpc.ConnectivityState) (grpc.ConnectivityState, error) {
-	n.Lock()
-	defer n.Unlock()
-	if n.conn != nil {
-		return n.conn.WaitForStateChange(ctx, sourceState)
-	}
-	return grpc.Shutdown, nil
-}
-
-// ConnState returns the state of the underlying grpc connection.
-// See https://godoc.org/google.golang.org/grpc#ConnectivityState for possible states.
-// Returns -1 if n.conn is nil
-func (n *managedNode) ConnState() (grpc.ConnectivityState, error) {
-	n.RLock()
-	defer n.RUnlock()
-	if n.conn != nil {
-		return n.conn.State()
-	}
-	return -1, nil
 }
 
 // Connect sets up a grpc connection for the node.
@@ -217,14 +188,6 @@ func (n *managedNode) RingUpdate(r *[]byte, version int64) (bool, error) {
 		return false, nil
 	}
 	ctx, _ := context.WithTimeout(context.Background(), DEFAULT_CTX_TIMEOUT)
-	for state, err := n.conn.State(); state != grpc.Ready; state, err = n.conn.WaitForStateChange(ctx, state) {
-		if err != nil {
-			return false, err
-		}
-		if state == grpc.Shutdown {
-			return false, fmt.Errorf("node conn has closed")
-		}
-	}
 	ru := &cc.Ring{
 		Ring:    *r,
 		Version: version,
